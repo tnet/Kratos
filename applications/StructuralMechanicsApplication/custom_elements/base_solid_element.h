@@ -721,6 +721,15 @@ protected:
         const ConstitutiveLaw::StressMeasure ThisStressMeasure
         );
 
+    virtual void SetConstitutiveVariables(
+        KinematicVariables& rThisKinematicVariables,
+        ConstitutiveVariables& rThisConstitutiveVariables,
+        ConstitutiveLaw::Parameters& rValues,
+        const IndexType PointNumber,
+        const GeometryType::IntegrationPointsArrayType& IntegrationPoints,
+        const ConstitutiveLaw::StressMeasure ThisStressMeasure
+        );
+
     /**
      * @brief This methods gives us a matrix with the increment of displacement
      * @param DeltaDisplacement The matrix containing the increment of displacements

@@ -669,7 +669,7 @@ void BaseSolidElement::CalculateOnIntegrationPoints(
                 CalculateKinematicVariables(this_kinematic_variables, point_number, this->GetIntegrationMethod());
 
                 // Compute material reponse
-                CalculateConstitutiveVariables(this_kinematic_variables, this_constitutive_variables, Values, point_number, integration_points, GetStressMeasure());
+                SetConstitutiveVariables(this_kinematic_variables, this_constitutive_variables, Values, point_number, integration_points, GetStressMeasure());
 
                 double StrainEnergy = 0.0;
 
@@ -954,7 +954,7 @@ void BaseSolidElement::CalculateOnIntegrationPoints(
                 CalculateKinematicVariables(this_kinematic_variables, point_number, this->GetIntegrationMethod());
 
                 // Compute material reponse
-                CalculateConstitutiveVariables(this_kinematic_variables, this_constitutive_variables, Values, point_number, integration_points, GetStressMeasure());
+                SetConstitutiveVariables(this_kinematic_variables, this_constitutive_variables, Values, point_number, integration_points, GetStressMeasure());
 
                 if ( rOutput[point_number].size() != strain_size)
                     rOutput[point_number].resize( strain_size, false );
@@ -1494,6 +1494,31 @@ void BaseSolidElement::CalculateConstitutiveVariables(
 
     // Actually do the computations in the ConstitutiveLaw
     mConstitutiveLawVector[PointNumber]->CalculateMaterialResponse(rValues, ThisStressMeasure); //here the calculations are actually done
+}
+
+/***********************************************************************************/
+/***********************************************************************************/
+
+void BaseSolidElement::SetConstitutiveVariables(
+    KinematicVariables& rThisKinematicVariables,
+    ConstitutiveVariables& rThisConstitutiveVariables,
+    ConstitutiveLaw::Parameters& rValues,
+    const IndexType PointNumber,
+    const GeometryType::IntegrationPointsArrayType& IntegrationPoints,
+    const ConstitutiveLaw::StressMeasure ThisStressMeasure
+    )
+{
+    // Here we essentially set the input parameters
+    rValues.SetShapeFunctionsValues(rThisKinematicVariables.N); // shape functions
+    rValues.SetDeterminantF(rThisKinematicVariables.detF); // Assuming the determinant is computed somewhere else
+    rValues.SetDeformationGradientF(rThisKinematicVariables.F); //F computed somewhere else
+
+    // Here we set the space on which the results shall be written
+    rValues.SetConstitutiveMatrix(rThisConstitutiveVariables.D); // Assuming the determinant is computed somewhere else
+    rValues.SetStressVector(rThisConstitutiveVariables.StressVector); //F computed somewhere else
+
+    // Actually do the computations in the ConstitutiveLaw
+    //mConstitutiveLawVector[PointNumber]->CalculateMaterialResponse(rValues, ThisStressMeasure); //here the calculations are actually done
 }
 
 /***********************************************************************************/

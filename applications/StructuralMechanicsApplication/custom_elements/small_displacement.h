@@ -226,6 +226,15 @@ protected:
         const ConstitutiveLaw::StressMeasure ThisStressMeasure
         ) override;
 
+     void SetConstitutiveVariables(
+        KinematicVariables& rThisKinematicVariables,
+        ConstitutiveVariables& rThisConstitutiveVariables,
+        ConstitutiveLaw::Parameters& rValues,
+        const IndexType PointNumber,
+        const GeometryType::IntegrationPointsArrayType& IntegrationPoints,
+        const ConstitutiveLaw::StressMeasure ThisStressMeasure
+        ) override;
+
     /**
      * Calculation of the Deformation Matrix B
      * @param rB The deformation matrix

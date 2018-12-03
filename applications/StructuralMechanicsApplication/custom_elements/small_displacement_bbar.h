@@ -241,6 +241,15 @@ protected:
             const ConstitutiveLaw::StressMeasure ThisStressMeasure
             ) override;
 
+     void SetConstitutiveVariables(
+            KinematicVariables& rThisKinematicVariables,
+            ConstitutiveVariables& rThisConstitutiveVariables,
+            ConstitutiveLaw::Parameters& rValues,
+            const IndexType PointNumber,
+            const GeometryType::IntegrationPointsArrayType& IntegrationPoints,
+            const ConstitutiveLaw::StressMeasure ThisStressMeasure
+            ) override;
+
     /**
     * This functions calculates both the RHS and the LHS
     * @param rLeftHandSideMatrix The LHS
