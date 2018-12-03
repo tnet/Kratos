@@ -95,10 +95,6 @@ void LinearIsotropicDamage3D::InitializeMaterial(
 void LinearIsotropicDamage3D::InitializeMaterialResponseCauchy(
     Kratos::ConstitutiveLaw::Parameters &rValues)
 {
-    Vector& r_strain_vector = rValues.GetStrainVector();
-    if (rValues.GetProcessInfo().Has(INITIAL_STRAIN)) {
-        noalias(r_strain_vector) += rValues.GetProcessInfo()[INITIAL_STRAIN];
-    }
 }
 
 //************************************************************************************
@@ -207,6 +203,9 @@ void LinearIsotropicDamage3D::CalculateStressResponse(
     const Properties& r_material_properties = rValues.GetMaterialProperties();
     Flags& r_constitutive_law_options = rValues.GetOptions();
     Vector& r_strain_vector = rValues.GetStrainVector();
+    if (rValues.GetProcessInfo().Has(INITIAL_STRAIN)) {
+        noalias(r_strain_vector) += rValues.GetProcessInfo()[INITIAL_STRAIN];
+    }
 
     if( r_constitutive_law_options.IsNot(ConstitutiveLaw::USE_ELEMENT_PROVIDED_STRAIN)) {
         this->CalculateValue(rValues, GREEN_LAGRANGE_STRAIN_VECTOR, r_strain_vector);
@@ -273,6 +272,9 @@ double& LinearIsotropicDamage3D::CalculateValue(
 {
     if (rThisVariable == STRAIN_ENERGY){
         Vector& r_strain_vector = rParameterValues.GetStrainVector();
+        if (rParameterValues.GetProcessInfo().Has(INITIAL_STRAIN)) {
+            noalias(r_strain_vector) += rParameterValues.GetProcessInfo()[INITIAL_STRAIN];
+        }
         const Properties& r_material_properties = rParameterValues.GetMaterialProperties();
         Matrix& r_constitutive_matrix = rParameterValues.GetConstitutiveMatrix();
         CalculateConstitutiveTensor(r_constitutive_matrix, r_material_properties);
@@ -303,13 +305,18 @@ Vector& LinearIsotropicDamage3D::CalculateValue(
     Vector& rValue
     )
 {
-    if (rThisVariable == STRAIN )
+    if (rThisVariable == GREEN_LAGRANGE_STRAIN_VECTOR )
     {
-        rValue = rParameterValues.GetStrainVector();
+        Vector& r_strain_vector = rParameterValues.GetStrainVector();
+        if (rParameterValues.GetProcessInfo().Has(INITIAL_STRAIN)) {
+            noalias(r_strain_vector) += rParameterValues.GetProcessInfo()[INITIAL_STRAIN];
+        }
+        rValue = r_strain_vector;
     }
 
-    if (rThisVariable == GREEN_LAGRANGE_STRAIN_VECTOR ||
-        rThisVariable == ALMANSI_STRAIN_VECTOR) {
+    if ( rThisVariable == STRAIN) {
+    //if (rThisVariable == GREEN_LAGRANGE_STRAIN_VECTOR ||
+    //    rThisVariable == ALMANSI_STRAIN_VECTOR) {
 
         const SizeType space_dimension = this->WorkingSpaceDimension();
 
