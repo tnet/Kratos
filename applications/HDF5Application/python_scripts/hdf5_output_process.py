@@ -29,6 +29,7 @@ class HDF5OutputProcess(KratosMultiphysics.Process):
     """
 
     def __init__(self, Model, settings):
+        KratosMultiphysics.Process.__init__(self)
         default_parameters = KratosMultiphysics.Parameters("""
         {
             "model_part_name"                    : "PLEASE_SPECIFY_MOEL_PART_NAME",
