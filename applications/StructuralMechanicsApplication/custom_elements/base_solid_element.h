@@ -722,6 +722,24 @@ protected:
         );
 
     /**
+     * @brief This functions updates the data structure passed to the CL
+     * @param rThisKinematicVariables The kinematic variables to be calculated
+     * @param rThisConstitutiveVariables The constitutive variables
+     * @param rValues The CL parameters
+     * @param PointNumber The integration point considered
+     * @param IntegrationPoints The list of integration points
+     * @param ThisStressMeasure The stress measure considered
+     */
+    virtual void SetConstitutiveVariables(
+        KinematicVariables& rThisKinematicVariables,
+        ConstitutiveVariables& rThisConstitutiveVariables,
+        ConstitutiveLaw::Parameters& rValues,
+        const IndexType PointNumber,
+        const GeometryType::IntegrationPointsArrayType& IntegrationPoints,
+        const ConstitutiveLaw::StressMeasure ThisStressMeasure
+        );
+
+    /**
      * @brief This methods gives us a matrix with the increment of displacement
      * @param DeltaDisplacement The matrix containing the increment of displacements
      * @return DeltaDisplacement: The matrix containing the increment of displacements
@@ -903,7 +921,7 @@ private:
     }
 
     /**
-     * @brief This method compues directly in the CL
+     * @brief This method computes directly in the CL
      * @details Avoids code repetition
      * @param rVariable The variable we want to get
      * @param rOutput The values obtained int the integration points
@@ -942,7 +960,7 @@ private:
             this->CalculateKinematicVariables(this_kinematic_variables, point_number, this->GetIntegrationMethod());
 
             // Compute material reponse
-            this->CalculateConstitutiveVariables(this_kinematic_variables, this_constitutive_variables, Values, point_number, integration_points, GetStressMeasure());
+            this->SetConstitutiveVariables(this_kinematic_variables, this_constitutive_variables, Values, point_number, integration_points, GetStressMeasure());
 
             rOutput[point_number] = mConstitutiveLawVector[point_number]->CalculateValue( Values, rVariable, rOutput[point_number] );
         }

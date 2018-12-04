@@ -269,7 +269,6 @@ void SmallDisplacementBbar::CalculateConstitutiveVariables(
     rThisKinematicVariables.F = ComputeEquivalentF(rThisConstitutiveVariables.StrainVector);
 
     // Here we essentially set the input parameters
-    //rThisKinematicVariables.detF = MathUtils<double>::Det(rThisKinematicVariables.F); //TODO(marcelo): check if this line is necessary
     rValues.SetShapeFunctionsValues(rThisKinematicVariables.N); // shape functions
     rValues.SetDeterminantF(rThisKinematicVariables.detF); //assuming the determinant is computed somewhere else
     rValues.SetDeformationGradientF(rThisKinematicVariables.F); //F computed somewhere else
@@ -280,6 +279,41 @@ void SmallDisplacementBbar::CalculateConstitutiveVariables(
 
     // Actually do the computations in the ConstitutiveLaw
     mConstitutiveLawVector[PointNumber]->CalculateMaterialResponse(rValues, ThisStressMeasure); //here the calculations are actually done
+}
+
+//************************************************************************************
+//************************************************************************************
+
+void SmallDisplacementBbar::SetConstitutiveVariables(
+        KinematicVariables& rThisKinematicVariables,
+        ConstitutiveVariables& rThisConstitutiveVariables,
+        ConstitutiveLaw::Parameters& rValues,
+        const IndexType PointNumber,
+        const GeometryType::IntegrationPointsArrayType& IntegrationPoints,
+        const ConstitutiveLaw::StressMeasure ThisStressMeasure
+    )
+{
+    // Displacements vector
+    Vector displacements;
+    GetValuesVector(displacements);
+
+    // Compute strain
+    noalias(rThisConstitutiveVariables.StrainVector) = prod(rThisKinematicVariables.B, displacements);
+
+    // Compute equivalent F
+    //rThisKinematicVariables.F = ComputeEquivalentF(rThisConstitutiveVariables.StrainVector);
+
+    // Here we essentially set the input parameters
+    rValues.SetShapeFunctionsValues(rThisKinematicVariables.N); // shape functions
+    rValues.SetDeterminantF(rThisKinematicVariables.detF); //assuming the determinant is computed somewhere else
+    rValues.SetDeformationGradientF(rThisKinematicVariables.F); //F computed somewhere else
+
+    // Here we set the space on which the results shall be written
+    rValues.SetConstitutiveMatrix(rThisConstitutiveVariables.D); //assuming the determinant is computed somewhere else
+    rValues.SetStressVector(rThisConstitutiveVariables.StressVector); //F computed somewhere else
+
+    // Actually do the computations in the ConstitutiveLaw
+    //mConstitutiveLawVector[PointNumber]->CalculateMaterialResponse(rValues, ThisStressMeasure); //here the calculations are actually done
 }
 
 //************************************************************************************
@@ -524,6 +558,12 @@ void SmallDisplacementBbar::CalculateOnIntegrationPoints(
         // Reading integration points
         const GeometryType::IntegrationPointsArrayType& integration_points = GetGeometry().IntegrationPoints(this->GetIntegrationMethod());
 
+        // Set constitutive law flags:
+        Flags& ConstitutiveLawOptions=Values.GetOptions();
+        ConstitutiveLawOptions.Set(ConstitutiveLaw::USE_ELEMENT_PROVIDED_STRAIN, UseElementProvidedStrain());
+        ConstitutiveLawOptions.Set(ConstitutiveLaw::COMPUTE_STRESS, false);
+        ConstitutiveLawOptions.Set(ConstitutiveLaw::COMPUTE_CONSTITUTIVE_TENSOR, false);
+
         // If strain has to be computed inside of the constitutive law with PK2
         Values.SetStrainVector(this_constitutive_variables.StrainVector); //this is the input  parameter
 
@@ -535,7 +575,7 @@ void SmallDisplacementBbar::CalculateOnIntegrationPoints(
             CalculateKinematicVariablesBbar(this_kinematic_variables, point_number, integration_points);
 
             // Compute material reponse
-            CalculateConstitutiveVariables(this_kinematic_variables, this_constitutive_variables,
+            SetConstitutiveVariables(this_kinematic_variables, this_constitutive_variables,
                                            Values, point_number, integration_points,
                                            GetStressMeasure());
 
@@ -710,7 +750,7 @@ void SmallDisplacementBbar::CalculateOnIntegrationPoints(
             CalculateKinematicVariablesBbar(this_kinematic_variables, point_number, integration_points);
 
             // Compute material reponse
-            CalculateConstitutiveVariables(this_kinematic_variables, this_constitutive_variables,
+            SetConstitutiveVariables(this_kinematic_variables, this_constitutive_variables,
                                            Values, point_number, integration_points,
                                            GetStressMeasure());
 
@@ -906,6 +946,8 @@ void SmallDisplacementBbar::FinalizeSolutionStep( ProcessInfo& rCurrentProcessIn
     ConstitutiveLawOptions.Set(ConstitutiveLaw::COMPUTE_CONSTITUTIVE_TENSOR, false);
 
     Values.SetStrainVector(this_constitutive_variables.StrainVector);
+    Values.SetStressVector(this_constitutive_variables.StressVector);
+    Values.SetConstitutiveMatrix(this_constitutive_variables.D);
 
     // Read integration points
     const GeometryType::IntegrationPointsArrayType& integration_points = GetGeometry().IntegrationPoints(this->GetIntegrationMethod());
@@ -921,6 +963,7 @@ void SmallDisplacementBbar::FinalizeSolutionStep( ProcessInfo& rCurrentProcessIn
         // Call the constitutive law to update material variables
         mConstitutiveLawVector[point_number]->FinalizeMaterialResponse(Values, GetStressMeasure());
 
+        // TODO: To be deprecated
         mConstitutiveLawVector[point_number]->FinalizeSolutionStep(
                 GetProperties(),
                 GetGeometry(),
