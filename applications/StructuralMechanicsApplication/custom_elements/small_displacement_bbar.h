@@ -241,15 +241,6 @@ protected:
             const ConstitutiveLaw::StressMeasure ThisStressMeasure
             ) override;
 
-     void SetConstitutiveVariables(
-            KinematicVariables& rThisKinematicVariables,
-            ConstitutiveVariables& rThisConstitutiveVariables,
-            ConstitutiveLaw::Parameters& rValues,
-            const IndexType PointNumber,
-            const GeometryType::IntegrationPointsArrayType& IntegrationPoints,
-            const ConstitutiveLaw::StressMeasure ThisStressMeasure
-            ) override;
-
     /**
     * This functions updates the data structure passed to the CL
     * @param rThisKinematicVariables The kinematic variables to be calculated
@@ -259,7 +250,7 @@ protected:
     * @param IntegrationPoints The list of integration points
     * @param ThisStressMeasure The stress measure considered
     */
-     void SetConstitutiveVariables(
+    void SetConstitutiveVariables(
             KinematicVariables& rThisKinematicVariables,
             ConstitutiveVariables& rThisConstitutiveVariables,
             ConstitutiveLaw::Parameters& rValues,

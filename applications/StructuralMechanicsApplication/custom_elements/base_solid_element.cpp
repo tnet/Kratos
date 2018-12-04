@@ -1515,31 +1515,6 @@ void BaseSolidElement::SetConstitutiveVariables(
 /***********************************************************************************/
 /***********************************************************************************/
 
-void BaseSolidElement::SetConstitutiveVariables(
-    KinematicVariables& rThisKinematicVariables,
-    ConstitutiveVariables& rThisConstitutiveVariables,
-    ConstitutiveLaw::Parameters& rValues,
-    const IndexType PointNumber,
-    const GeometryType::IntegrationPointsArrayType& IntegrationPoints,
-    const ConstitutiveLaw::StressMeasure ThisStressMeasure
-    )
-{
-    // Here we essentially set the input parameters
-    rValues.SetShapeFunctionsValues(rThisKinematicVariables.N); // shape functions
-    rValues.SetDeterminantF(rThisKinematicVariables.detF); // Assuming the determinant is computed somewhere else
-    rValues.SetDeformationGradientF(rThisKinematicVariables.F); //F computed somewhere else
-
-    // Here we set the space on which the results shall be written
-    rValues.SetConstitutiveMatrix(rThisConstitutiveVariables.D); // Assuming the determinant is computed somewhere else
-    rValues.SetStressVector(rThisConstitutiveVariables.StressVector); //F computed somewhere else
-
-    // Actually do the computations in the ConstitutiveLaw
-    //mConstitutiveLawVector[PointNumber]->CalculateMaterialResponse(rValues, ThisStressMeasure); //here the calculations are actually done
-}
-
-/***********************************************************************************/
-/***********************************************************************************/
-
 Matrix& BaseSolidElement::CalculateDeltaDisplacement(Matrix& DeltaDisplacement)
 {
     KRATOS_TRY

@@ -721,15 +721,6 @@ protected:
         const ConstitutiveLaw::StressMeasure ThisStressMeasure
         );
 
-    virtual void SetConstitutiveVariables(
-        KinematicVariables& rThisKinematicVariables,
-        ConstitutiveVariables& rThisConstitutiveVariables,
-        ConstitutiveLaw::Parameters& rValues,
-        const IndexType PointNumber,
-        const GeometryType::IntegrationPointsArrayType& IntegrationPoints,
-        const ConstitutiveLaw::StressMeasure ThisStressMeasure
-        );
-
     /**
      * @brief This functions updates the data structure passed to the CL
      * @param rThisKinematicVariables The kinematic variables to be calculated
