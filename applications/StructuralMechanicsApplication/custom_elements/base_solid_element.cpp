@@ -1516,7 +1516,7 @@ void BaseSolidElement::SetConstitutiveVariables(
 /***********************************************************************************/
 
 Matrix& BaseSolidElement::CalculateDeltaDisplacement(Matrix& DeltaDisplacement)
-l
+{
     KRATOS_TRY
 
     const SizeType number_of_nodes = GetGeometry().PointsNumber();
