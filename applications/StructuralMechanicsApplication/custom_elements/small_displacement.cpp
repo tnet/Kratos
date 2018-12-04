@@ -239,9 +239,6 @@ void SmallDisplacement::SetConstitutiveVariables(
     // Here we set the space on which the results shall be written
     rValues.SetConstitutiveMatrix(rThisConstitutiveVariables.D); //assuming the determinant is computed somewhere else
     rValues.SetStressVector(rThisConstitutiveVariables.StressVector); //F computed somewhere else
-
-    // Actually do the computations in the ConstitutiveLaw
-    //mConstitutiveLawVector[PointNumber]->CalculateMaterialResponse(rValues, ThisStressMeasure); //here the calculations are actually done
 }
 
 /***********************************************************************************/

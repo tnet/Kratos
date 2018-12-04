@@ -251,6 +251,24 @@ protected:
             ) override;
 
     /**
+    * This functions updates the data structure passed to the CL
+    * @param rThisKinematicVariables The kinematic variables to be calculated
+    * @param rThisConstitutiveVariables The constitutive variables
+    * @param rValues The CL parameters
+    * @param PointNumber The integration point considered
+    * @param IntegrationPoints The list of integration points
+    * @param ThisStressMeasure The stress measure considered
+    */
+     void SetConstitutiveVariables(
+            KinematicVariables& rThisKinematicVariables,
+            ConstitutiveVariables& rThisConstitutiveVariables,
+            ConstitutiveLaw::Parameters& rValues,
+            const IndexType PointNumber,
+            const GeometryType::IntegrationPointsArrayType& IntegrationPoints,
+            const ConstitutiveLaw::StressMeasure ThisStressMeasure
+            ) override;
+
+    /**
     * This functions calculates both the RHS and the LHS
     * @param rLeftHandSideMatrix The LHS
     * @param rRightHandSideVector The RHS
