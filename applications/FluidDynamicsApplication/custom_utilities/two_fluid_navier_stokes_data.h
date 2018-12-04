@@ -173,7 +173,6 @@ void UpdateGeometryValues(
 	ElementSize = ElementSizeCalculator<TDim, TNumNodes>::GradientsElementSize(rDN_DX);
 	noalias(this->Nenr) = rNenr;
 	noalias(this->DN_DXenr) = rDN_DXenr;
-    ComputeDarcyTerm();
 }
 
 static int Check(const Element& rElement, const ProcessInfo& rProcessInfo)
@@ -361,7 +360,7 @@ void ComputeDarcyTerm()
         }
     }
     const double advec_velocity_norm = MathUtils<double>::Norm(advec_velocity);
-    DarcyTerm = LinearDarcyCoefficient + NonLinearDarcyCoefficient * advec_velocity_norm;
+    DarcyTerm = EffectiveViscosity * LinearDarcyCoefficient + Density * NonLinearDarcyCoefficient * advec_velocity_norm;
 }
 ///@}
 
