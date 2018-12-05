@@ -124,6 +124,7 @@ void TwoFluidNavierStokes<TElementData>::CalculateLocalSystem(
                     } else {
                         this->CalculateMaterialResponse(data);
                     }
+                    data.ComputeDarcyTerm();
 
                     this->AddTimeIntegratedSystem(data, rLeftHandSideMatrix, rRightHandSideVector);
                 }
@@ -144,6 +145,7 @@ void TwoFluidNavierStokes<TElementData>::CalculateLocalSystem(
 
                     data.CalculateDensityAtGaussPoint();
                     data.CalculateAirMaterialResponse();
+                    data.ComputeDarcyTerm();
                     this->AddTimeIntegratedSystem(data, rLeftHandSideMatrix, rRightHandSideVector);
                     ComputeGaussPointEnrichmentContributions(data, Vtot, Htot, Kee_tot, rhs_ee_tot);
                 }
@@ -159,6 +161,7 @@ void TwoFluidNavierStokes<TElementData>::CalculateLocalSystem(
 
                     data.CalculateDensityAtGaussPoint();
                     this->CalculateMaterialResponse(data);
+                    data.ComputeDarcyTerm();
                     this->AddTimeIntegratedSystem(data, rLeftHandSideMatrix, rRightHandSideVector);
                     ComputeGaussPointEnrichmentContributions(data, Vtot, Htot, Kee_tot, rhs_ee_tot);
                 }
@@ -177,6 +180,7 @@ void TwoFluidNavierStokes<TElementData>::CalculateLocalSystem(
                 data.UpdateGeometryValues(g, gauss_weights[g], row(shape_functions, g), shape_derivatives[g]);
                 data.CalculateDensityAtGaussPoint();
                 this->CalculateMaterialResponse(data);
+                data.ComputeDarcyTerm();
                 this->AddTimeIntegratedSystem(data, rLeftHandSideMatrix, rRightHandSideVector);
             }
         }
@@ -266,6 +270,7 @@ void TwoFluidNavierStokes<TElementData>::Calculate( const Variable<Vector >& rVa
             dataLocal.CalculateDensityAtGaussPoint();
             dataLocal.CalculateEffectiveViscosityAtGaussPoint();
             dataLocal.CalculateAirMaterialResponse();
+            dataLocal.ComputeDarcyTerm();
 
             const Vector gauss_point_contribution = dataLocal.ShearStress;
 
