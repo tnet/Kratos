@@ -28,7 +28,7 @@
         "Parameters"  : {
             "time_integration_settings":{
   	        "analysis_type": "ALE",
-		"integration_method" : "Bossak",
+                "integration_method": "Bossak",
                 "integration_variables":["MESH_VELOCITY"]
             },
             "convergence_criterion_settings":{

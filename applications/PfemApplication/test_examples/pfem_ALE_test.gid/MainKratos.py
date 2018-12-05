@@ -5,7 +5,6 @@ import KratosMultiphysics.PfemApplication
 import KratosMultiphysics.ConstitutiveModelsApplication
 import KratosMultiphysics.SolidMechanicsApplication
 import KratosMultiphysics.FluidDynamicsApplication
-
 import MainPfem
 
-MainPfem.PfemSolution().Run()
+MainPfem.PfemSolution(KratosMultiphysics.Model()).Run()

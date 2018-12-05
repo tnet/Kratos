@@ -1,49 +1,97 @@
 {
     "problem_data"             : {
-        "problem_name" : "pfem_ALE_slip_test",
+        "problem_name" : "pfem_ALE_test_2_steps",
         "echo_level"   : 0
     },
     "model_settings"           : {
-        "model_name"           : "pfem_ALE_slip_test",
+        "model_name"           : "pfem_ALE_test_2_steps",
         "dimension"            : 2,
         "input_file_settings"  : {
-            "name" : "pfem_ALE_slip_test"
+            "name" : "pfem_ALE_test_2_steps"
         },
         "bodies_list"          : [{
             "body_type"  : "Fluid",
-            "body_name"  : "water_body",
-            "parts_list" : ["Parts_water_group"]
+            "body_name"  : "Body0",
+            "parts_list" : ["Parts_Parts_Auto1"]
         },{
             "body_type"  : "Rigid",
-            "body_name"  : "rigid_wall_body",
-            "parts_list" : ["Parts_wall_group"]
+            "body_name"  : "Body1",
+            "parts_list" : ["Parts_Parts_Auto2"]
         }],
-        "domain_parts_list"    : ["Parts_water_group","Parts_wall_group"],
-        "processes_parts_list" : ["VELOCITY_Velocity_Auto1","PRESSURE_Pressure_Auto1"]
+        "domain_parts_list"    : ["Parts_Parts_Auto1","Parts_Parts_Auto2"],
+        "processes_parts_list" : ["VELOCITY_Velocity_Auto1"]
     },
     "time_settings"            : {
         "time_step" : 0.001,
-        "end_time"  : 3.0
+        "end_time"  : 2.0
     },
     "solver_settings"          : {
-        "solver_type" : "solid_mechanics_implicit_dynamic_solver",
+        "solver_type" : "solid_mechanics_segregated_solver",
         "Parameters"  : {
-            "time_integration_settings":{
-  	        "analysis_type": "ALE",
-                "integration_variables":["MESH_VELOCITY"]
-            },
-            "solving_strategy_settings":{
-                "builder_type": "block_builder",
-                "compute_reactions": false,
-                "reform_dofs_at_each_step": true,
-                "max_iteration": 15
-            },
-            "linear_solver_settings":{
-                "solver_type": "SuperLUSolver",
-                "max_iteration": 500,
-                "tolerance": 1e-9
-            },
-            "dofs"               : ["VELOCITY","PRESSURE"]
+            "solvers" : [{
+                "solver_type" : "solid_mechanics_implicit_dynamic_solver",
+                "Parameters"  : {
+                    "time_integration_settings"      : {
+                        "solution_type"      : "Dynamic",
+                        "time_integration"   : "Implicit",
+                        "integration_method" : "Newmark",
+                        "buffer_size"        : 2
+                    },
+                    "convergence_criterion_settings" : {
+                        "convergence_criterion"       : "Variable_criterion",
+                        "variable_relative_tolerance" : 1e-5,
+                        "variable_absolute_tolerance" : 1e-9,
+                        "residual_relative_tolerance" : 1e-5,
+                        "residual_absolute_tolerance" : 1e-9
+                    },
+                    "solving_strategy_settings"      : {
+                        "max_iteration"            : 20,
+                        "lumped_mass_matrix"       : true,
+                        "consistent_mass_matrix"   : false,
+                        "reform_dofs_at_each_step" : true
+                    },
+                    "linear_solver_settings"         : {
+                        "solver_type"         : "BICGSTABSolver",
+                        "max_iteration"       : 5000,
+                        "tolerance"           : 1e-9,
+                        "preconditioner_type" : "None",
+                        "scaling"             : false
+                    },
+                    "dofs"                           : ["VELOCITY"]
+                }
+            },{
+                "solver_type" : "solid_mechanics_implicit_dynamic_solver",
+                "Parameters"  : {
+                    "time_integration_settings"      : {
+                        "solution_type"          : "Dynamic",
+                        "integration_method"     : "Bdf",
+                        "time_integration_order" : 1,
+                        "analysis_type"          : "Non-linear",
+                        "buffer_size"            : 2
+                    },
+                    "convergence_criterion_settings" : {
+                        "convergence_criterion"       : "Variable_criterion",
+                        "variable_relative_tolerance" : 1e-5,
+                        "variable_absolute_tolerance" : 1e-9,
+                        "residual_relative_tolerance" : 1e-5,
+                        "residual_absolute_tolerance" : 1e-9
+                    },
+                    "solving_strategy_settings"      : {
+                        "max_iteration"            : 20,
+                        "lumped_mass_matrix"       : true,
+                        "consistent_mass_matrix"   : false,
+                        "reform_dofs_at_each_step" : true
+                    },
+                    "linear_solver_settings"         : {
+                        "solver_type"         : "BICGSTABSolver",
+                        "max_iteration"       : 5000,
+                        "tolerance"           : 1e-9,
+                        "preconditioner_type" : "None",
+                        "scaling"             : false
+                    },
+                    "dofs"                           : ["PRESSURE"]
+                }
+            }]
         }
     },
     "problem_process_list"     : [{
@@ -52,13 +100,12 @@
         "python_module" : "remesh_fluid_domains_process",
         "process_name"  : "RemeshFluidDomainsProcess",
         "Parameters"    : {
-            "model_part_name"       : "pfem_ALE_slip_test",
+            "model_part_name"       : "pfem_ALE_test_2_steps",
             "meshing_control_type"  : "step",
             "meshing_frequency"     : 1.0,
             "meshing_before_output" : true,
-	    "echo_level"   : 1,
             "meshing_domains"       : [{
-                "model_part_name"                 : "water_body",
+                "model_part_name"                 : "Body0",
                 "python_module"                   : "meshing_domain",
                 "alpha_shape"                     : 1.25,
                 "offset_factor"                   : 0.0,
@@ -73,7 +120,7 @@
                     "mesh_smoothing"                : false,
                     "variables_smoothing"           : false,
                     "elemental_variables_to_smooth" : ["DETERMINANT_F"],
-                    "reference_element_type"        : "FIC2D3N",
+                    "reference_element_type"        : "UpdatedLagrangianSegregatedFluidElement2D3N",
                     "reference_condition_type"      : "CompositeCondition2D2N"
                 },
                 "spatial_bounding_box"            : {
@@ -125,18 +172,10 @@
         }
     }],
     "constraints_process_list" : [{
-        "python_module" : "assign_flags_process",
-        "kratos_module" : "KratosMultiphysics.SolidMechanicsApplication",
-        "help"          : "This process fixes the given scalar variable",
-        "process_name"  : "AssignFlagsProcess",
-        "Parameters"    : {
-            "model_part_name"     : "PRESSURE_Pressure_Auto1",
-            "entity_type_list": ["Nodes"],
-            "flags_list": ["SLIP"]
-        }
-    },{
         "python_module" : "assign_vector_components_to_nodes_process",
         "kratos_module" : "KratosMultiphysics.SolidMechanicsApplication",
+        "help"          : "This process fixes the selected components of a given vector variable",
+        "process_name"  : "AssignVectorComponentsToNodesProcess",
         "Parameters"    : {
             "model_part_name"     : "VELOCITY_Velocity_Auto1",
             "variable_name"       : "VELOCITY",
@@ -149,7 +188,7 @@
         "python_module" : "assign_vector_components_to_nodes_process",
         "kratos_module" : "KratosMultiphysics.SolidMechanicsApplication",
         "Parameters"    : {
-            "model_part_name" : "water_body",
+            "model_part_name" : "Body0",
             "variable_name"   : "VOLUME_ACCELERATION",
             "value"           : [0.0,-9.81,0.0],
             "constrained"     : false
@@ -161,9 +200,9 @@
         "help"          : "This process writes restart files",
         "process_name"  : "RestartProcess",
         "Parameters"    : {
-            "model_part_name"     : "pfem_ALE_slip_test",
+            "model_part_name"     : "pfem_ALE_test_2_steps",
             "save_restart"        : false,
-            "restart_file_name"   : "pfem_ALE_slip_test",
+            "restart_file_name"   : "pfem_ALE_test_2_steps",
             "restart_file_label"  : "step",
             "output_control_type" : "step",
             "output_frequency"    : 1,
@@ -182,7 +221,8 @@
             "output_control_type" : "step",
             "output_frequency"    : 1,
             "node_output"         : true,
-            "nodal_results"       : ["DISPLACEMENT","VELOCITY","ACCELERATION","PRESSURE","MESH_VELOCITY"],
+            "nodal_flags_results" : ["FREE_SURFACE","INLET"],
+            "nodal_results"       : ["DISPLACEMENT","VELOCITY","ACCELERATION","PRESSURE","NORMAL"],
             "gauss_point_results" : []
         }
     }

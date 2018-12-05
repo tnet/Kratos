@@ -5,7 +5,7 @@
         "help"          : "This process creates a material and assigns its properties",
         "process_name"  : "AssignMaterialsProcess",
         "Parameters"    : {
-            "model_part_name"  : "Parts_water_group",
+            "model_part_name"  : "Parts_Parts_Auto1",
             "properties_id"    : 1,
             "material_name"    : "Water",
             "constitutive_law" : {

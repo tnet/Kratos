@@ -11,38 +11,45 @@
         },
         "bodies_list"          : [{
             "body_type"  : "Fluid",
-            "body_name"  : "water_body",
-            "parts_list" : ["Parts_water_group"]
+            "body_name"  : "Body0",
+            "parts_list" : ["Parts_Parts_Auto1"]
         },{
             "body_type"  : "Rigid",
-            "body_name"  : "rigid_wall_body",
-            "parts_list" : ["Parts_wall_group"]
+            "body_name"  : "Body1",
+            "parts_list" : ["Parts_Parts_Auto2"]
         }],
-        "domain_parts_list"    : ["Parts_water_group","Parts_wall_group"],
-        "processes_parts_list" : ["VELOCITY_Velocity_Auto1"],
-	"variables" : ["BODY_FORCE"]
+        "domain_parts_list"    : ["Parts_Parts_Auto1","Parts_Parts_Auto2"],
+        "processes_parts_list" : ["VELOCITY_Velocity_Auto1","PRESSURE_Outlet"]
     },
     "time_settings"            : {
         "time_step" : 0.001,
-        "end_time"  : 3.0
+        "end_time"  : 2.0
     },
     "solver_settings"          : {
         "solver_type" : "solid_mechanics_implicit_dynamic_solver",
         "Parameters"  : {
             "time_integration_settings":{
   	        "analysis_type": "ALE",
+                "integration_method": "Bossak",
                 "integration_variables":["MESH_VELOCITY"]
+            },
+            "convergence_criterion_settings":{
+                "convergence_criterion": "Variable_criterion",
+                "variable_relative_tolerance": 0.001,
+                "variable_absolute_tolerance": 1.0e-5,
+                "residual_relative_tolerance": 0.001,
+                "residual_absolute_tolerance": 1.0e-5,
+                "separate_dofs": true
             },
             "solving_strategy_settings":{
                 "builder_type": "block_builder",
                 "compute_reactions": false,
-                "reform_dofs_at_each_step": true,
-                "max_iteration": 15
+                "reform_dofs_at_each_step": false,
+                "max_iteration": 25,
+                "move_mesh_flag": false
             },
             "linear_solver_settings":{
-                "solver_type": "SuperLUSolver",
-                "max_iteration": 500,
-                "tolerance": 1e-9
+                "solver_type": "SuperLUSolver"
             },
             "dofs"               : ["VELOCITY","PRESSURE"]
         }
@@ -57,9 +64,8 @@
             "meshing_control_type"  : "step",
             "meshing_frequency"     : 1.0,
             "meshing_before_output" : true,
-	    "echo_level"   : 1,
             "meshing_domains"       : [{
-                "model_part_name"                 : "water_body",
+                "model_part_name"                 : "Body0",
                 "python_module"                   : "meshing_domain",
                 "alpha_shape"                     : 1.25,
                 "offset_factor"                   : 0.0,
@@ -74,7 +80,7 @@
                     "mesh_smoothing"                : false,
                     "variables_smoothing"           : false,
                     "elemental_variables_to_smooth" : ["DETERMINANT_F"],
-                    "reference_element_type"        : "FIC2D3N",
+                    "reference_element_type"        : "UpdatedLagrangianSegregatedFluidElement2D3N",
                     "reference_condition_type"      : "CompositeCondition2D2N"
                 },
                 "spatial_bounding_box"            : {
@@ -128,10 +134,24 @@
     "constraints_process_list" : [{
         "python_module" : "assign_vector_components_to_nodes_process",
         "kratos_module" : "KratosMultiphysics.SolidMechanicsApplication",
+        "help"          : "This process fixes the selected components of a given vector variable",
+        "process_name"  : "AssignVectorComponentsToNodesProcess",
         "Parameters"    : {
             "model_part_name"     : "VELOCITY_Velocity_Auto1",
             "variable_name"       : "VELOCITY",
             "value"               : [0.0,0.0,0.0],
+            "compound_assignment" : "direct",
+            "interval"            : [0.0,"End"]
+        }
+    },{
+        "python_module" : "assign_scalar_to_nodes_process",
+        "kratos_module" : "KratosMultiphysics.SolidMechanicsApplication",
+        "help"          : "This process fixes the given scalar variable",
+        "process_name"  : "AssignScalarToNodesProcess",
+        "Parameters"    : {
+            "model_part_name"     : "PRESSURE_Outlet",
+            "variable_name"       : "PRESSURE",
+            "value"               : 0.0,
             "compound_assignment" : "direct",
             "interval"            : [0.0,"End"]
         }
@@ -140,7 +160,7 @@
         "python_module" : "assign_vector_components_to_nodes_process",
         "kratos_module" : "KratosMultiphysics.SolidMechanicsApplication",
         "Parameters"    : {
-            "model_part_name" : "water_body",
+            "model_part_name" : "Body0",
             "variable_name"   : "BODY_FORCE",
             "value"           : [0.0,-9.81,0.0],
             "constrained"     : false
@@ -173,7 +193,8 @@
             "output_control_type" : "step",
             "output_frequency"    : 1,
             "node_output"         : true,
-            "nodal_results"       : ["DISPLACEMENT","VELOCITY","ACCELERATION","PRESSURE"],
+            "nodal_flags_results" : ["FREE_SURFACE","INLET"],
+            "nodal_results"       : ["DISPLACEMENT","VELOCITY","ACCELERATION","PRESSURE","NORMAL","BODY_FORCE","MESH_VELOCITY"],
             "gauss_point_results" : []
         }
     }
