@@ -133,6 +133,7 @@ class SolutionScheme:
             if(self.settings["time_integration"].GetString() == "Implicit"):
                 if(self.settings["analysis_type"].GetString() == "ALE"):
                     if(len(vector_integration_methods) and len(scalar_integration_methods)):
+                        # TODO: move_mesh flag
                         import KratosMultiphysics.PfemApplication as KratosPfem
                         options = KratosMultiphysics.Flags()
                         options.Set(KratosSolid.SolverLocalFlags.MOVE_MESH, True)
