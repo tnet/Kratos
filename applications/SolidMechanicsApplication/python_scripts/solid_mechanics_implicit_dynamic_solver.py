@@ -129,13 +129,6 @@ class ImplicitMonolithicSolver(BaseSolver.MonolithicSolver):
         solution_scheme = self._get_solution_scheme()
         #linear_solver = self._get_linear_solver()
         convergence_criterion = self._get_convergence_criterion()
-        # TODO: should we use this convergence criteria?
-        #import KratosMultiphysics.FluidDynamicsApplication as KratosCFD
-        # convergence_criterion = KratosCFD.VelPrCriteria(self.settings["convergence_criterion_settings"]["variable_relative_tolerance"].GetDouble(),
-        #                                              self.settings["convergence_criterion_settings"]["variable_absolute_tolerance"].GetDouble(),
-        #                                              self.settings["convergence_criterion_settings"]["residual_relative_tolerance"].GetDouble(),
-        #                                              self.settings["convergence_criterion_settings"]["residual_absolute_tolerance"].GetDouble())
-
         builder_and_solver = self._get_builder_and_solver()
 
         options = KratosMultiphysics.Flags()

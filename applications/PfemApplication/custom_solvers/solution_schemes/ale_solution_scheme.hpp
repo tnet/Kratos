@@ -185,8 +185,8 @@ class AleSolutionScheme : public DynamicScheme<TSparseSpace, TDenseSpace>
 
     this->UpdateDofs(rModelPart,rDofSet,rDx);
 
-    //TODO: test as eulerian
-    //this->UpdateMeshVelocity(rModelPart,rDx);
+    // TODO: We must rotate and recover mesh_velocity too (modify mRotationTool methods)
+    this->UpdateMeshVelocity(rModelPart,rDx);
 
     mRotationTool.RecoverVelocities(rModelPart);
 
