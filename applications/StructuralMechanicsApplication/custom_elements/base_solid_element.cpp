@@ -948,13 +948,15 @@ void BaseSolidElement::CalculateOnIntegrationPoints(
 
             Values.SetStrainVector(this_constitutive_variables.StrainVector);
 
+            const ConstitutiveLaw::StressMeasure this_stress_measure = rVariable == GREEN_LAGRANGE_STRAIN_VECTOR ? ConstitutiveLaw::StressMeasure_PK2 : ConstitutiveLaw::StressMeasure_Kirchhoff;
+
             //reading integration points
             for ( IndexType point_number = 0; point_number < number_of_integration_points; ++point_number ) {
                 // Compute element kinematics B, F, DN_DX ...
                 CalculateKinematicVariables(this_kinematic_variables, point_number, this->GetIntegrationMethod());
 
                 // Compute material reponse
-                SetConstitutiveVariables(this_kinematic_variables, this_constitutive_variables, Values, point_number, integration_points);
+                CalculateConstitutiveVariables(this_kinematic_variables, this_constitutive_variables, Values, point_number, integration_points, this_stress_measure);
 
                 if ( rOutput[point_number].size() != strain_size)
                     rOutput[point_number].resize( strain_size, false );

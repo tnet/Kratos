@@ -734,7 +734,7 @@ protected:
         ConstitutiveLaw::Parameters& rValues,
         const IndexType PointNumber,
         const GeometryType::IntegrationPointsArrayType& IntegrationPoints,
-        const ConstitutiveLaw::StressMeasure ThisStressMeasure
+        const ConstitutiveLaw::StressMeasure ThisStressMeasure = ConstitutiveLaw::StressMeasure_PK2
         );
 
     /**
