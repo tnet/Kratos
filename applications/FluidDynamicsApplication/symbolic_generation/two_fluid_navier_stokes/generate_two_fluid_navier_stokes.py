@@ -228,6 +228,7 @@ for dim in dim_vector:
         rv_stab_enriched -= rho*grad_q.transpose()*tau1*grad_penr
 
     rv_stab_enriched -= rho*vconv_gauss.transpose()*grad_w*tau1*grad_penr
+    rv_stab_enriched += w_gauss.transpose()*K_darcy*tau1*grad_penr
     #rv_stab_enriched -= rho*div_vconv*w_gauss.transpose()*tau1*grad_penr
     
     rv_enriched = rv_galerkin_enriched
