@@ -89,6 +89,7 @@ void ImposeAxisymmetricMovementProcess::ExecuteInitialize()
     // Getting list of variables
     std::vector<Variable<double>> master_double_list_variables, slave_double_list_variables;
     std::vector<VariableComponent<ComponentType>> master_components_list_variables, slave_components_list_variables;
+    std::vector<VariableComponent<ComponentType>> master_vector_components_list_variables, slave_vector_components_list_variables;
     std::vector<Variable<array_1d< double, 3>>> master_vector_list_variables, slave_vector_list_variables;
     const std::string& r_master_variable_name = mThisParameters["master_variable_name"].GetString();
     // The master variable
@@ -101,6 +102,12 @@ void ImposeAxisymmetricMovementProcess::ExecuteInitialize()
     } else if (KratosComponents< Variable< array_1d< double, 3> > >::Has(r_master_variable_name)) {
         Variable<array_1d< double, 3>> variable = KratosComponents<Variable<array_1d< double, 3>>>::Get(r_master_variable_name);
         master_vector_list_variables.push_back(variable);
+        VariableComponent<ComponentType> variable_x = KratosComponents<VariableComponent<ComponentType>>::Get(r_master_variable_name + "_X");
+        master_vector_components_list_variables.push_back(variable_x);
+        VariableComponent<ComponentType> variable_y = KratosComponents<VariableComponent<ComponentType>>::Get(r_master_variable_name + "_Y");
+        master_vector_components_list_variables.push_back(variable_y);
+        VariableComponent<ComponentType> variable_z = KratosComponents<VariableComponent<ComponentType>>::Get(r_master_variable_name + "_Z");
+        master_vector_components_list_variables.push_back(variable_z);
     } else {
         KRATOS_ERROR << "Only double, components and vector variables are allowed in the variables list." ;
     }
@@ -116,6 +123,12 @@ void ImposeAxisymmetricMovementProcess::ExecuteInitialize()
         } else if (KratosComponents< Variable< array_1d< double, 3> > >::Has(r_slave_variable_name)) {
             Variable<array_1d< double, 3>> variable = KratosComponents<Variable<array_1d< double, 3>>>::Get(r_slave_variable_name);
             slave_vector_list_variables.push_back(variable);
+            VariableComponent<ComponentType> variable_x = KratosComponents<VariableComponent<ComponentType>>::Get(r_slave_variable_name + "_X");
+            slave_vector_components_list_variables.push_back(variable_x);
+            VariableComponent<ComponentType> variable_y = KratosComponents<VariableComponent<ComponentType>>::Get(r_slave_variable_name + "_Y");
+            slave_vector_components_list_variables.push_back(variable_y);
+            VariableComponent<ComponentType> variable_z = KratosComponents<VariableComponent<ComponentType>>::Get(r_slave_variable_name + "_Z");
+            slave_vector_components_list_variables.push_back(variable_z);
         } else {
             KRATOS_ERROR << "Only double, components and vector variables are allowed in the variables list." ;
         }
@@ -262,9 +275,30 @@ void ImposeAxisymmetricMovementProcess::ExecuteInitialize()
                             (constraints_buffer).insert((constraints_buffer).begin(), constraint);
                         }
                     }
-                    for (IndexType i_var = 0; i_var < number_of_vector_variables; ++i_var) {
-//                         auto constraint = r_clone_constraint.Create(constraint_id + (i * number_of_vector_variables + i_var) + 1, *p_reference_node, master_components_list_variables[i_var], *it_node, slave_components_list_variables[i_var], relation, constant);
-//                         (constraints_buffer).insert((constraints_buffer).begin(), constraint);
+
+                    if (number_of_vector_variables > 0) {
+                        Matrix relation_matrix(3, 3 * master_size);
+                        for (IndexType index = 0; index < coefficients.size(); ++index) {
+                            relation_matrix(0, index) = coefficients[index];
+                        }
+                        Vector constant_vector = ZeroVector(3);
+
+                        DofPointerVectorType master_dofs(3 * master_size);
+                        DofPointerVectorType slave_dofs(3);
+
+                        for (IndexType i_var = 0; i_var < number_of_vector_variables; ++i_var) {
+                            for (IndexType index = 0; index < indexes.size(); ++index) {
+                                auto p_master_node = r_root_model_part.pGetNode(indexes[index]);
+                                master_dofs[3 * index] = p_master_node->pGetDof(master_vector_components_list_variables[3 * i_var]);
+                                master_dofs[3 * index + 1] = p_master_node->pGetDof(master_vector_components_list_variables[3 * i_var + 1]);
+                                master_dofs[3 * index + 2] = p_master_node->pGetDof(master_vector_components_list_variables[3 * i_var + 2]);
+                            }
+                            slave_dofs[0] = it_node->pGetDof(slave_vector_components_list_variables[3 * i_var]);
+                            slave_dofs[1] = it_node->pGetDof(slave_vector_components_list_variables[3 * i_var + 1]);
+                            slave_dofs[2] = it_node->pGetDof(slave_vector_components_list_variables[3 * i_var + 2]);
+                            auto constraint = r_clone_constraint.Create(constraint_id + (i * number_of_double_variables + i_var) + 1, master_dofs, slave_dofs, relation_matrix, constant_vector);
+                            (constraints_buffer).insert((constraints_buffer).begin(), constraint);
+                        }
                     }
                 }
             }
