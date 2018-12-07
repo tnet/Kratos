@@ -396,10 +396,10 @@ std::unordered_map<ImposeAxisymmetricMovementProcess::IndexType, ImposeAxisymmet
             const array_1d<double, 3>& r_current_node_coordinates = it_node->Coordinates();
 
             const array_1d<double, 3> vector_points = r_current_node_coordinates - r_reference_node_coordinates;
-            radius = inner_prod(vector_points, r_axis_vector);
-            const array_1d<double, 3> clossest_point = r_reference_node_coordinates + r_axis_vector * radius;
+            axis = inner_prod(vector_points, r_axis_vector);
+            const array_1d<double, 3> clossest_point = r_reference_node_coordinates + r_axis_vector * axis;
             array_1d<double, 3> axisymmetric_vector = clossest_point - r_current_node_coordinates;
-            axis = std::sqrt(inner_prod(vector_points, vector_points) - std::pow(radius, 2));
+            radius = std::sqrt(inner_prod(vector_points, vector_points) - std::pow(radius, 2));
 
             const int id = OpenMPUtils::ThisThread();
 
@@ -434,6 +434,8 @@ std::unordered_map<ImposeAxisymmetricMovementProcess::IndexType, ImposeAxisymmet
 
     // Debug info
     if (mThisParameters["echo_level"].GetInt() > 1) {
+        KRATOS_WATCH(max_radius)
+        KRATOS_WATCH(max_axis)
         KRATOS_WATCH(triangle_1)
         KRATOS_WATCH(triangle_2)
     }
