@@ -72,7 +72,8 @@ void ImposeAxisymmetricMovementProcess::ExecuteInitialize()
 
     // Getting model parts
     ModelPart& r_root_model_part = mrThisModelPart.GetRootModelPart();
-    ModelPart& r_model_part = r_root_model_part.GetSubModelPart(mThisParameters["model_part_name"].GetString());
+    Model& r_model = r_root_model_part.GetModel();
+    ModelPart& r_model_part = r_model.GetModelPart(mThisParameters["model_part_name"].GetString());
     const std::string& new_model_part_name = mThisParameters["new_model_part_name"].GetString();
     ModelPart& r_axisymmetric_model_part = new_model_part_name != r_model_part.Name() ? r_model_part.HasSubModelPart(new_model_part_name) ? r_model_part.GetSubModelPart(new_model_part_name) : r_model_part.CreateSubModelPart(new_model_part_name) : r_model_part;
 
@@ -155,7 +156,6 @@ void ImposeAxisymmetricMovementProcess::ExecuteInitialize()
     }
 
     // We create an auxiliar model part to generate the axisymmetry (this is a cut in the transversal direction)
-    Model& r_model = r_root_model_part.GetModel();
     ModelPart& r_reference_model_part = r_model.CreateModelPart("REFERENCE_AXISYMMETRY_MODEL_PART");
     auto all_local_relations = FillReferenceModelPart(r_reference_model_part, r_axisymmetric_model_part);
 

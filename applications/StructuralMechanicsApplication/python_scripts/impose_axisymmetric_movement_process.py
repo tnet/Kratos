@@ -69,7 +69,7 @@ class ImposeAxisymmetricMovementProcess(KratosMultiphysics.Process):
             else:
                 self.rigid_model_part = self.model_part.CreateSubModelPart(new_model_part_name)
         else:
-            settings["new_model_part_name"].SetString(settings["model_part_name"].GetString())
+            settings["new_model_part_name"].SetString(self.model_part.Name)
             self.rigid_model_part = self.model_part
 
         # Create the process

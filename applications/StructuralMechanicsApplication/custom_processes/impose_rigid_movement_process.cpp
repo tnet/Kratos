@@ -14,6 +14,7 @@
 // External includes
 
 // Project includes
+#include "containers/model.h"
 #include "utilities/openmp_utils.h"
 #include "custom_processes/impose_rigid_movement_process.h"
 
@@ -61,7 +62,8 @@ void ImposeRigidMovementProcess::ExecuteInitialize()
 
     // Getting model parts
     ModelPart& r_root_model_part = mrThisModelPart.GetRootModelPart();
-    ModelPart& r_model_part = r_root_model_part.GetSubModelPart(mThisParameters["model_part_name"].GetString());
+    Model& r_model = r_root_model_part.GetModel();
+    ModelPart& r_model_part = r_model.GetModelPart(mThisParameters["model_part_name"].GetString());
     const std::string& r_new_model_part_name = mThisParameters["new_model_part_name"].GetString();
     ModelPart& r_rigid_model_part = r_new_model_part_name != r_model_part.Name() ? r_model_part.HasSubModelPart(r_new_model_part_name) ? r_model_part.GetSubModelPart(r_new_model_part_name) : r_model_part.CreateSubModelPart(r_new_model_part_name) : r_model_part;
 
