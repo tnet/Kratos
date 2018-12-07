@@ -8,9 +8,9 @@ def Factory(settings, Model):
 
 ## All the processes python should be derived from "Process"
 class ImposeAxisymmetricMovementProcess(KratosMultiphysics.Process):
-    """This class is used in order to impose a rigid body movement in a certain region of the problem
+    """This class is used in order to impose an axisymmetric body movement in a certain region of the problem
 
-    This class constructs the model parts containing the constrains that enforce the rigid body movement
+    This class constructs the model parts containing the constrains that enforce the axisymmetric body movement
     Only the member variables listed below should be accessed directly.
 
     Public member variables:
@@ -30,15 +30,15 @@ class ImposeAxisymmetricMovementProcess(KratosMultiphysics.Process):
 
         default_settings = KratosMultiphysics.Parameters("""
         {
-            "help"                        : "This process uses LinearMasterSlaveConstraint in order to impose an unified movement in the given submodelpart. The process takes the first node from the submodelpart if no node's ID is provided. The default variable is DISPLACEMENT, and in case no variable is considered for the slave the same variable will be considered",
+            "help"                        : "This process uses LinearMasterSlaveConstraint in order to impose an axisymmetric movement in the given submodelpart. The process takes the first node from the submodelpart if no node's ID is provided. The default variable is DISPLACEMENT, and in case no variable is considered for the slave the same variable will be considered",
             "computing_model_part_name"   : "computing_domain",
             "model_part_name"             : "please_specify_model_part_name",
             "new_model_part_name"         : "",
             "interval"                    : [0.0, 1e30],
             "master_variable_name"        : "DISPLACEMENT",
             "slave_variable_name"         : "",
-            "relation"                    : 1.0,
-            "constant"                    : 0.0,
+            "axisymmetry_axis"            : [0.0,0.0,1.0],
+            "max_number_of_searchs"       : 1000,
             "master_node_id"              : 0
         }
         """)
@@ -73,15 +73,15 @@ class ImposeAxisymmetricMovementProcess(KratosMultiphysics.Process):
             self.rigid_model_part = self.model_part
 
         # Create the process
-        rigid_parameters = KratosMultiphysics.Parameters("""{}""")
-        rigid_parameters.AddValue("model_part_name", settings["model_part_name"])
-        rigid_parameters.AddValue("new_model_part_name", settings["new_model_part_name"])
-        rigid_parameters.AddValue("master_variable_name", settings["master_variable_name"])
-        rigid_parameters.AddValue("slave_variable_name", settings["slave_variable_name"])
-        rigid_parameters.AddValue("relation", settings["relation"])
-        rigid_parameters.AddValue("constant", settings["constant"])
-        rigid_parameters.AddValue("master_node_id", settings["master_node_id"])
-        self.rigid_movement_process = StructuralMechanicsApplication.ImposeAxisymmetricMovementProcess(self.computing_model_part, rigid_parameters)
+        axisymmetric_parameters = KratosMultiphysics.Parameters("""{}""")
+        axisymmetric_parameters.AddValue("model_part_name", settings["model_part_name"])
+        axisymmetric_parameters.AddValue("new_model_part_name", settings["new_model_part_name"])
+        axisymmetric_parameters.AddValue("master_variable_name", settings["master_variable_name"])
+        axisymmetric_parameters.AddValue("slave_variable_name", settings["slave_variable_name"])
+        axisymmetric_parameters.AddValue("axisymmetry_axis", settings["axisymmetry_axis"])
+        axisymmetric_parameters.AddValue("max_number_of_searchs", settings["max_number_of_searchs"])
+        axisymmetric_parameters.AddValue("master_node_id", settings["master_node_id"])
+        self.rigid_movement_process = StructuralMechanicsApplication.ImposeAxisymmetricMovementProcess(self.computing_model_part, axisymmetric_parameters)
 
         # Trasfering the entities
         if (new_model_part_name != ""):
