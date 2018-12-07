@@ -67,6 +67,9 @@ public:
     typedef std::size_t                                                 IndexType;
     typedef std::size_t                                                  SizeType;
 
+    /// Definition of the 3x3 bounded rotation matrix
+    typedef BoundedMatrix<double, 3, 3>                        RotationMatrixType;
+
     /// Definition of the local relation map type
     typedef std::unordered_map<IndexType, double>            LocalRelationMapType;
 
@@ -247,15 +250,23 @@ private:
      */
     void ClearReferenceModelPart(ModelPart& rReferenceModelPart);
 
+    /**
+     * @brief This method computes the rotation matrix arround an axis
+     * @param rAxisVector The vector that define the rotation axis
+     * @param Theta The rotation angle
+     */
+    RotationMatrixType ComputeRotationMatrix(
+        const Vector& rAxisVector,
+        const double Theta
+        );
+
     ///@}
     ///@name Private  Access
     ///@{
 
-
     ///@}
     ///@name Private Inquiry
     ///@{
-
 
     ///@}
     ///@name Un accessible methods

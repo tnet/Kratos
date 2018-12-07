@@ -14,7 +14,6 @@
 // External includes
 
 // Project includes
-#include "input_output/logger.h"
 #include "containers/model.h"
 #include "geometries/triangle_2d_3.h"
 #include "structural_mechanics_application_variables.h"
@@ -176,6 +175,10 @@ void ImposeAxisymmetricMovementProcess::ExecuteInitialize()
     // Get the axis
     const Vector& r_axis_vector = mThisParameters["axisymmetry_axis"].GetVector();
 
+    // Getting tangent plane
+    array_1d<double, 3> tangent_xi, tangent_eta;
+    MathUtils<double>::OrthonormalBasis(r_axis_vector, tangent_xi, tangent_eta);
+
     // If we master node ID is zero then we get the center of gravity of the model part
     NodeType::Pointer p_reference_node = r_root_model_part.pGetNode(master_node_id);
     const array_1d<double, 3>& r_reference_node_coordinates = p_reference_node->Coordinates();
@@ -183,8 +186,13 @@ void ImposeAxisymmetricMovementProcess::ExecuteInitialize()
     // Creation of the constraints
     #pragma omp parallel
     {
+        // Buffer of constraints
         ConstraintContainerType constraints_buffer;
         constraints_buffer.reserve(number_of_nodes);
+
+        // Auxiliar values
+        Vector shape_functions;
+        Element::Pointer p_element;
 
         #pragma omp for
         for (int i = 0; i < number_of_nodes; ++i) {
@@ -202,22 +210,23 @@ void ImposeAxisymmetricMovementProcess::ExecuteInitialize()
                 if (norm > std::numeric_limits<double>::epsilon())
                     axisymmetric_vector /= norm;
 
-                Vector shape_functions;
-                Element::Pointer p_element;
+                const double theta = std::acos(inner_prod(tangent_xi, axisymmetric_vector)/(norm_2(tangent_xi) * norm_2(axisymmetric_vector)));
+                const RotationMatrixType rotation_matrix = ComputeRotationMatrix(r_axis_vector, theta);
 
-                const array_1d<double, 3>& coordinates = it_node->Coordinates();
+                const array_1d<double, 3>& coordinates = prod(rotation_matrix, r_current_node_coordinates);
                 const bool is_found = point_locator.FindPointOnMeshSimplified(coordinates, shape_functions, p_element, mThisParameters["max_number_of_searchs"].GetInt(), 5.0e-2);
 
-//                 KRATOS_WARNING_IF_NOT("ImposeAxisymmetricMovementProcess", is_found) << "WARNING: Node "<< it_node->Id() << " not found (interpolation not posible)" << "\n\t X:"<< it_node->X() << "\t Y:"<< it_node->Y() << "\t Z:"<< it_node->Z() << std::endl;
-
-                // We create the constraints
-                for (IndexType i_var = 0; i_var < number_of_double_variables; ++i_var) {
-                    auto constraint = r_clone_constraint.Create(constraint_id + (i * number_of_double_variables + i_var) + 1, *p_reference_node, master_double_list_variables[i_var], *it_node, slave_double_list_variables[i_var], relation, constant);
-                    (constraints_buffer).insert((constraints_buffer).begin(), constraint);
-                }
-                for (IndexType i_var = 0; i_var < number_of_components_variables; ++i_var) {
-                    auto constraint = r_clone_constraint.Create(constraint_id + (i * number_of_components_variables + i_var) + 1, *p_reference_node, master_components_list_variables[i_var], *it_node, slave_components_list_variables[i_var], relation, constant);
-                    (constraints_buffer).insert((constraints_buffer).begin(), constraint);
+                // It is found
+                if (is_found) {
+                    // We create the constraints
+                    for (IndexType i_var = 0; i_var < number_of_double_variables; ++i_var) {
+                        auto constraint = r_clone_constraint.Create(constraint_id + (i * number_of_double_variables + i_var) + 1, *p_reference_node, master_double_list_variables[i_var], *it_node, slave_double_list_variables[i_var], relation, constant);
+                        (constraints_buffer).insert((constraints_buffer).begin(), constraint);
+                    }
+                    for (IndexType i_var = 0; i_var < number_of_components_variables; ++i_var) {
+                        auto constraint = r_clone_constraint.Create(constraint_id + (i * number_of_components_variables + i_var) + 1, *p_reference_node, master_components_list_variables[i_var], *it_node, slave_components_list_variables[i_var], relation, constant);
+                        (constraints_buffer).insert((constraints_buffer).begin(), constraint);
+                    }
                 }
             }
         }
@@ -405,6 +414,31 @@ void ImposeAxisymmetricMovementProcess::ClearReferenceModelPart(ModelPart& rRefe
     rReferenceModelPart.RemoveConditionsFromAllLevels(TO_ERASE);
     rReferenceModelPart.RemoveElementsFromAllLevels(TO_ERASE);
     rReferenceModelPart.RemoveNodesFromAllLevels(TO_ERASE);
+}
+
+/***********************************************************************************/
+/***********************************************************************************/
+
+ImposeAxisymmetricMovementProcess::RotationMatrixType ImposeAxisymmetricMovementProcess::ComputeRotationMatrix(
+    const Vector& rAxisVector,
+    const double Theta
+    )
+{
+    RotationMatrixType rotation_matrix;
+
+    rotation_matrix(0, 0) = std::cos(Theta) + std::pow(rAxisVector[0], 2) * (1.0 - std::cos(Theta));
+    rotation_matrix(0, 1) = rAxisVector[0] * rAxisVector[1] * (1.0 - std::cos(Theta)) - rAxisVector[2] * std::sin(Theta);
+    rotation_matrix(0, 2) = rAxisVector[0] * rAxisVector[2] * (1.0 - std::cos(Theta)) - rAxisVector[1] * std::sin(Theta);
+
+    rotation_matrix(1, 0) = rAxisVector[0] * rAxisVector[1] * (1.0 - std::cos(Theta)) - rAxisVector[2] * std::sin(Theta);
+    rotation_matrix(1, 1) = std::cos(Theta) + std::pow(rAxisVector[1], 2) * (1.0 - std::cos(Theta));
+    rotation_matrix(1, 2) = rAxisVector[1] * rAxisVector[2] * (1.0 - std::cos(Theta)) - rAxisVector[0] * std::sin(Theta);
+
+    rotation_matrix(2, 0) = rAxisVector[2] * rAxisVector[0] * (1.0 - std::cos(Theta)) - rAxisVector[1] * std::sin(Theta);
+    rotation_matrix(2, 1) = rAxisVector[1] * rAxisVector[2] * (1.0 - std::cos(Theta)) - rAxisVector[0] * std::sin(Theta);
+    rotation_matrix(2, 2) = std::cos(Theta) + std::pow(rAxisVector[2], 2) * (1.0 - std::cos(Theta));
+
+    return rotation_matrix;
 }
 
 // class ImposeAxisymmetricMovementProcess
