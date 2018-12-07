@@ -63,6 +63,12 @@ public:
     /// Component definition
     typedef VectorComponentAdaptor< array_1d< double, 3 > >         ComponentType;
 
+    /// The DoF type definition
+    typedef Dof<double>                                                   DofType;
+
+    /// The DoF pointer vector type definition
+    typedef std::vector< DofType::Pointer >                  DofPointerVectorType;
+
     /// Definitions of the integers
     typedef std::size_t                                                 IndexType;
     typedef std::size_t                                                  SizeType;

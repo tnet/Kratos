@@ -213,16 +213,54 @@ void ImposeAxisymmetricMovementProcess::ExecuteInitialize()
                     const IndexType id_3 = r_geometry[2].Id();
                     const auto& local_relation_3 = all_local_relations[id_3];
 
-                    // We create the constraints
-                    for (IndexType i_var = 0; i_var < number_of_double_variables; ++i_var) {
-                        Matrix relation_matrix(3, 1);
-                        Vector constant_vector = ZeroVector(1);
-//                         auto constraint = r_clone_constraint.Create(constraint_id + (i * number_of_double_variables + i_var) + 1, *p_reference_node, master_double_list_variables[i_var], *it_node, slave_double_list_variables[i_var], relation, constant);
-//                         (constraints_buffer).insert((constraints_buffer).begin(), constraint);
+                    std::vector<IndexType> indexes;
+                    std::vector<double> coefficients;
+                    if (shape_functions[0] > std::numeric_limits<double>::epsilon()) {
+                        for (auto& relation : local_relation_1) {
+                            indexes.push_back(relation.first);
+                            coefficients.push_back(relation.second * shape_functions[0]);
+                        }
                     }
-                    for (IndexType i_var = 0; i_var < number_of_components_variables; ++i_var) {
-//                         auto constraint = r_clone_constraint.Create(constraint_id + (i * number_of_components_variables + i_var) + 1, *p_reference_node, master_components_list_variables[i_var], *it_node, slave_components_list_variables[i_var], relation, constant);
-//                         (constraints_buffer).insert((constraints_buffer).begin(), constraint);
+                    if (shape_functions[1] > std::numeric_limits<double>::epsilon()) {
+                        for (auto& relation : local_relation_2) {
+                            indexes.push_back(relation.first);
+                            coefficients.push_back(relation.second * shape_functions[1]);
+                        }
+                    }
+                    if (shape_functions[2] > std::numeric_limits<double>::epsilon()) {
+                        for (auto& relation : local_relation_3) {
+                            indexes.push_back(relation.first);
+                            coefficients.push_back(relation.second * shape_functions[2]);
+                        }
+                    }
+                    const SizeType master_size = indexes.size();
+
+                    // We create the constraints
+                    if ((number_of_double_variables + number_of_components_variables) > 0) {
+                        Matrix relation_matrix(1, master_size);
+                        for (IndexType index = 0; index < coefficients.size(); ++index) {
+                            relation_matrix(0, index) = coefficients[index];
+                        }
+                        Vector constant_vector = ZeroVector(1);
+
+                        DofPointerVectorType master_dofs(master_size);
+                        DofPointerVectorType slave_dofs(1);
+                        for (IndexType i_var = 0; i_var < number_of_double_variables; ++i_var) {
+                            for (IndexType index = 0; index < indexes.size(); ++index) {
+                                master_dofs[index] = r_root_model_part.pGetNode(indexes[index])->pGetDof(master_double_list_variables[i_var]);
+                            }
+                            slave_dofs[0] = it_node->pGetDof(slave_double_list_variables[i_var]);
+                            auto constraint = r_clone_constraint.Create(constraint_id + (i * number_of_double_variables + i_var) + 1, master_dofs, slave_dofs, relation_matrix, constant_vector);
+                            (constraints_buffer).insert((constraints_buffer).begin(), constraint);
+                        }
+                        for (IndexType i_var = 0; i_var < number_of_components_variables; ++i_var) {
+                            for (IndexType index = 0; index < indexes.size(); ++index) {
+                                master_dofs[index] = r_root_model_part.pGetNode(indexes[index])->pGetDof(master_components_list_variables[i_var]);
+                            }
+                            slave_dofs[0] = it_node->pGetDof(slave_components_list_variables[i_var]);
+                            auto constraint = r_clone_constraint.Create(constraint_id + (i * number_of_double_variables + i_var) + 1, master_dofs, slave_dofs, relation_matrix, constant_vector);
+                            (constraints_buffer).insert((constraints_buffer).begin(), constraint);
+                        }
                     }
                     for (IndexType i_var = 0; i_var < number_of_vector_variables; ++i_var) {
 //                         auto constraint = r_clone_constraint.Create(constraint_id + (i * number_of_vector_variables + i_var) + 1, *p_reference_node, master_components_list_variables[i_var], *it_node, slave_components_list_variables[i_var], relation, constant);
