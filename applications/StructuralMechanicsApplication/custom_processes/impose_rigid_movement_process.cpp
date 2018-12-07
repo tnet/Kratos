@@ -67,8 +67,8 @@ void ImposeRigidMovementProcess::ExecuteInitialize()
 
     // Reorder constrains
     IndexType constraint_id = 1;
-    for (auto& constrain : root_model_part.MasterSlaveConstraints()) {
-        constrain.SetId(constraint_id);
+    for (auto& r_constrain : root_model_part.MasterSlaveConstraints()) {
+        r_constrain.SetId(constraint_id);
         ++constraint_id;
     }
 
@@ -144,6 +144,7 @@ void ImposeRigidMovementProcess::ExecuteInitialize()
     #pragma omp parallel
     {
         ConstraintContainerType constraints_buffer;
+        constraints_buffer.reserve(number_of_nodes);
 
         // If we master node ID is zero then we get the first node of the model part
         NodeType::Pointer p_master_node = (master_node_id == 0) ? *(rigid_model_part.Nodes().begin()).base() : root_model_part.pGetNode(master_node_id);
