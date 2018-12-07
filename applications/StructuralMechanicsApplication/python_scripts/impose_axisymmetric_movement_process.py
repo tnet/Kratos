@@ -81,7 +81,7 @@ class ImposeAxisymmetricMovementProcess(KratosMultiphysics.Process):
         axisymmetric_parameters.AddValue("axisymmetry_axis", settings["axisymmetry_axis"])
         axisymmetric_parameters.AddValue("max_number_of_searchs", settings["max_number_of_searchs"])
         axisymmetric_parameters.AddValue("master_node_id", settings["master_node_id"])
-        self.rigid_movement_process = StructuralMechanicsApplication.ImposeAxisymmetricMovementProcess(self.computing_model_part, axisymmetric_parameters)
+        self.axisymmetric_movement_process = StructuralMechanicsApplication.ImposeAxisymmetricMovementProcess(self.computing_model_part, axisymmetric_parameters)
 
         # Trasfering the entities
         if (new_model_part_name != ""):
@@ -94,7 +94,7 @@ class ImposeAxisymmetricMovementProcess(KratosMultiphysics.Process):
         Keyword arguments:
         self -- It signifies an instance of a class.
         """
-        self.rigid_movement_process.ExecuteInitialize()
+        self.axisymmetric_movement_process.ExecuteInitialize()
 
     def ExecuteInitializeSolutionStep(self):
         """ This method is executed in order to initialize the current step
