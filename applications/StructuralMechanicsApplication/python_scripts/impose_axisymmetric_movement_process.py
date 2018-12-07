@@ -39,7 +39,8 @@ class ImposeAxisymmetricMovementProcess(KratosMultiphysics.Process):
             "slave_variable_name"         : "",
             "axisymmetry_axis"            : [0.0,0.0,1.0],
             "max_number_of_searchs"       : 1000,
-            "master_node_id"              : 0
+            "master_node_id"              : 0,
+            "echo_level"                  : 0
         }
         """)
 
@@ -81,6 +82,7 @@ class ImposeAxisymmetricMovementProcess(KratosMultiphysics.Process):
         axisymmetric_parameters.AddValue("axisymmetry_axis", settings["axisymmetry_axis"])
         axisymmetric_parameters.AddValue("max_number_of_searchs", settings["max_number_of_searchs"])
         axisymmetric_parameters.AddValue("master_node_id", settings["master_node_id"])
+        axisymmetric_parameters.AddValue("echo_level", settings["echo_level"])
         self.axisymmetric_movement_process = StructuralMechanicsApplication.ImposeAxisymmetricMovementProcess(self.computing_model_part, axisymmetric_parameters)
 
         # Trasfering the entities

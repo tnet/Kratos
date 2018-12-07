@@ -44,7 +44,8 @@ ImposeAxisymmetricMovementProcess::ImposeAxisymmetricMovementProcess(
         "max_number_of_searchs"       : 1000,
         "master_variable_name"        : "DISPLACEMENT",
         "slave_variable_name"         : "",
-        "master_node_id"              : 0
+        "master_node_id"              : 0,
+        "echo_level"                  : 0
     })" );
 
     mThisParameters.ValidateAndAssignDefaults(default_parameters);
@@ -158,6 +159,11 @@ void ImposeAxisymmetricMovementProcess::ExecuteInitialize()
     // We create an auxiliar model part to generate the axisymmetry (this is a cut in the transversal direction)
     ModelPart& r_reference_model_part = r_model.CreateModelPart("REFERENCE_AXISYMMETRY_MODEL_PART");
     auto all_local_relations = FillReferenceModelPart(r_reference_model_part, r_axisymmetric_model_part);
+
+    // Debug info
+    if (mThisParameters["echo_level"].GetInt() > 0) {
+        KRATOS_WATCH(r_reference_model_part)
+    }
 
     // We create the locator
     auto point_locator = BinBasedFastPointLocator<2>(r_reference_model_part);
