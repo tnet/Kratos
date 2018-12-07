@@ -44,8 +44,6 @@ ImposeAxisymmetricMovementProcess::ImposeAxisymmetricMovementProcess(
         "max_number_of_searchs"       : 1000,
         "master_variable_name"        : "DISPLACEMENT",
         "slave_variable_name"         : "",
-        "relation"                    : 1.0,
-        "constant"                    : 0.0,
         "master_node_id"              : 0
     })" );
 
@@ -91,6 +89,7 @@ void ImposeAxisymmetricMovementProcess::ExecuteInitialize()
     // Getting list of variables
     std::vector<Variable<double>> master_double_list_variables, slave_double_list_variables;
     std::vector<VariableComponent<ComponentType>> master_components_list_variables, slave_components_list_variables;
+    std::vector<Variable<array_1d< double, 3>>> master_vector_list_variables, slave_vector_list_variables;
     const std::string& r_master_variable_name = mThisParameters["master_variable_name"].GetString();
     // The master variable
     if(KratosComponents<Variable<double>>::Has(r_master_variable_name)){
@@ -100,14 +99,8 @@ void ImposeAxisymmetricMovementProcess::ExecuteInitialize()
         VariableComponent<ComponentType> variable = KratosComponents<VariableComponent<ComponentType>>::Get(r_master_variable_name);
         master_components_list_variables.push_back(variable);
     } else if (KratosComponents< Variable< array_1d< double, 3> > >::Has(r_master_variable_name)) {
-        VariableComponent<ComponentType> variable_x = KratosComponents<VariableComponent<ComponentType>>::Get(r_master_variable_name+"_X");
-        master_components_list_variables.push_back(variable_x);
-        VariableComponent<ComponentType> variable_y = KratosComponents<VariableComponent<ComponentType>>::Get(r_master_variable_name+"_Y");
-        master_components_list_variables.push_back(variable_y);
-        if (r_root_model_part.GetProcessInfo()[DOMAIN_SIZE] == 3) {
-            VariableComponent<ComponentType> variable_z = KratosComponents<VariableComponent<ComponentType>>::Get(r_master_variable_name+"_Z");
-            master_components_list_variables.push_back(variable_z);
-        }
+        Variable<array_1d< double, 3>> variable = KratosComponents<Variable<array_1d< double, 3>>>::Get(r_master_variable_name);
+        master_vector_list_variables.push_back(variable);
     } else {
         KRATOS_ERROR << "Only double, components and vector variables are allowed in the variables list." ;
     }
@@ -121,12 +114,8 @@ void ImposeAxisymmetricMovementProcess::ExecuteInitialize()
             VariableComponent<ComponentType> variable = KratosComponents<VariableComponent<ComponentType>>::Get(r_slave_variable_name);
             slave_components_list_variables.push_back(variable);
         } else if (KratosComponents< Variable< array_1d< double, 3> > >::Has(r_slave_variable_name)) {
-            VariableComponent<ComponentType> variable_x = KratosComponents<VariableComponent<ComponentType>>::Get(r_slave_variable_name+"_X");
-            slave_components_list_variables.push_back(variable_x);
-            VariableComponent<ComponentType> variable_y = KratosComponents<VariableComponent<ComponentType>>::Get(r_slave_variable_name+"_Y");
-            slave_components_list_variables.push_back(variable_y);
-            VariableComponent<ComponentType> variable_z = KratosComponents<VariableComponent<ComponentType>>::Get(r_slave_variable_name+"_Z");
-            slave_components_list_variables.push_back(variable_z);
+            Variable<array_1d< double, 3>> variable = KratosComponents<Variable<array_1d< double, 3>>>::Get(r_slave_variable_name);
+            slave_vector_list_variables.push_back(variable);
         } else {
             KRATOS_ERROR << "Only double, components and vector variables are allowed in the variables list." ;
         }
@@ -155,7 +144,7 @@ void ImposeAxisymmetricMovementProcess::ExecuteInitialize()
     // We create an auxiliar model part to generate the axisymmetry (this is a cut in the transversal direction)
     Model& r_model = r_root_model_part.GetModel();
     ModelPart& r_reference_model_part = r_model.CreateModelPart("REFERENCE_AXISYMMETRY_MODEL_PART");
-    const auto all_local_relations = FillReferenceModelPart(r_reference_model_part, r_axisymmetric_model_part);
+    auto all_local_relations = FillReferenceModelPart(r_reference_model_part, r_axisymmetric_model_part);
 
     // We create the locator
     auto point_locator = BinBasedFastPointLocator<2>(r_reference_model_part);
@@ -164,10 +153,7 @@ void ImposeAxisymmetricMovementProcess::ExecuteInitialize()
     // List of variables
     const SizeType number_of_double_variables = master_double_list_variables.size();
     const SizeType number_of_components_variables = master_components_list_variables.size();
-
-    // We get the relation and constant
-    const double relation = mThisParameters["relation"].GetDouble();
-    const double constant = mThisParameters["constant"].GetDouble();
+    const SizeType number_of_vector_variables = master_vector_list_variables.size();
 
     // Reference constraint
     const auto& r_clone_constraint = KratosComponents<MasterSlaveConstraint>::Get("LinearMasterSlaveConstraint");
@@ -218,14 +204,29 @@ void ImposeAxisymmetricMovementProcess::ExecuteInitialize()
 
                 // It is found
                 if (is_found) {
+                    // The geoemtry of the reference geometry
+                    auto& r_geometry = p_element->GetGeometry();
+                    const IndexType id_1 = r_geometry[0].Id();
+                    const auto& local_relation_1 = all_local_relations[id_1];
+                    const IndexType id_2 = r_geometry[1].Id();
+                    const auto& local_relation_2 = all_local_relations[id_2];
+                    const IndexType id_3 = r_geometry[2].Id();
+                    const auto& local_relation_3 = all_local_relations[id_3];
+
                     // We create the constraints
                     for (IndexType i_var = 0; i_var < number_of_double_variables; ++i_var) {
-                        auto constraint = r_clone_constraint.Create(constraint_id + (i * number_of_double_variables + i_var) + 1, *p_reference_node, master_double_list_variables[i_var], *it_node, slave_double_list_variables[i_var], relation, constant);
-                        (constraints_buffer).insert((constraints_buffer).begin(), constraint);
+                        Matrix relation_matrix(3, 1);
+                        Vector constant_vector = ZeroVector(1);
+//                         auto constraint = r_clone_constraint.Create(constraint_id + (i * number_of_double_variables + i_var) + 1, *p_reference_node, master_double_list_variables[i_var], *it_node, slave_double_list_variables[i_var], relation, constant);
+//                         (constraints_buffer).insert((constraints_buffer).begin(), constraint);
                     }
                     for (IndexType i_var = 0; i_var < number_of_components_variables; ++i_var) {
-                        auto constraint = r_clone_constraint.Create(constraint_id + (i * number_of_components_variables + i_var) + 1, *p_reference_node, master_components_list_variables[i_var], *it_node, slave_components_list_variables[i_var], relation, constant);
-                        (constraints_buffer).insert((constraints_buffer).begin(), constraint);
+//                         auto constraint = r_clone_constraint.Create(constraint_id + (i * number_of_components_variables + i_var) + 1, *p_reference_node, master_components_list_variables[i_var], *it_node, slave_components_list_variables[i_var], relation, constant);
+//                         (constraints_buffer).insert((constraints_buffer).begin(), constraint);
+                    }
+                    for (IndexType i_var = 0; i_var < number_of_vector_variables; ++i_var) {
+//                         auto constraint = r_clone_constraint.Create(constraint_id + (i * number_of_vector_variables + i_var) + 1, *p_reference_node, master_components_list_variables[i_var], *it_node, slave_components_list_variables[i_var], relation, constant);
+//                         (constraints_buffer).insert((constraints_buffer).begin(), constraint);
                     }
                 }
             }
@@ -349,7 +350,7 @@ std::unordered_map<ImposeAxisymmetricMovementProcess::IndexType, ImposeAxisymmet
     int intersection;
     IndexType index_node = 0;
     IndexType index_element = 0;
-    // Loop over the elements
+    // Loop over the elements (something can be done to not cut all the elements, because it is expensive)
     for (auto& r_elem : rAxisymmetricModelPart.Elements()) {
 
         // The list of created nodes
@@ -381,8 +382,8 @@ std::unordered_map<ImposeAxisymmetricMovementProcess::IndexType, ImposeAxisymmet
                 Vector N(2);
                 N = r_edge.ShapeFunctionsValues(N, local_point);
                 LocalRelationMapType this_relation;
-                this_relation.insert({r_edge[0].Id(), N[0]});
-                this_relation.insert({r_edge[1].Id(), N[1]});
+                if (N[0] > std::numeric_limits<double>::epsilon()) this_relation.insert({r_edge[0].Id(), N[0]});
+                if (N[1] > std::numeric_limits<double>::epsilon()) this_relation.insert({r_edge[1].Id(), N[1]});
                 all_local_relations.insert({index_node, this_relation});
             }
         }
