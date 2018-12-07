@@ -160,6 +160,8 @@ void ImposeAxisymmetricMovementProcess::ExecuteInitialize()
     ModelPart& r_reference_model_part = r_model.CreateModelPart("REFERENCE_AXISYMMETRY_MODEL_PART");
     auto all_local_relations = FillReferenceModelPart(r_reference_model_part, r_axisymmetric_model_part);
 
+    KRATOS_ERROR_IF(r_reference_model_part.NumberOfElements() == 0) << "Empty reference model part" << std::endl;
+
     // Debug info
     if (mThisParameters["echo_level"].GetInt() > 0) {
         KRATOS_WATCH(r_reference_model_part)
@@ -430,6 +432,12 @@ std::unordered_map<ImposeAxisymmetricMovementProcess::IndexType, ImposeAxisymmet
     auto triangle_1 = Triangle2D3<Point>(points_array_1);
     auto triangle_2 = Triangle2D3<Point>(points_array_2);
 
+    // Debug info
+    if (mThisParameters["echo_level"].GetInt() > 0) {
+        KRATOS_WATCH(triangle_1)
+        KRATOS_WATCH(triangle_2)
+    }
+
     // Auxiliar declarations
     std::unordered_map<IndexType, LocalRelationMapType> all_local_relations;
 
@@ -438,7 +446,7 @@ std::unordered_map<ImposeAxisymmetricMovementProcess::IndexType, ImposeAxisymmet
     IndexType index_node = 0;
     IndexType index_element = 0;
     // Loop over the elements (something can be done to not cut all the elements, because it is expensive)
-    for (auto& r_elem : rAxisymmetricModelPart.Elements()) {
+    for (auto& r_elem : rAxisymmetricModelPart.GetRootModelPart().Elements()) {
 
         // The list of created nodes
         std::vector<NodeType::Pointer> created_nodes_list;
