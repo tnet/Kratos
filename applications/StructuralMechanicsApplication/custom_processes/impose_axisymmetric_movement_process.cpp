@@ -279,7 +279,16 @@ void ImposeAxisymmetricMovementProcess::ExecuteInitialize()
                     if (number_of_vector_variables > 0) {
                         Matrix relation_matrix(3, 3 * master_size);
                         for (IndexType index = 0; index < coefficients.size(); ++index) {
-                            relation_matrix(0, index) = coefficients[index];
+                            array_1d<double, 3> final_coeffs;
+                            for (IndexType i_dim = 0; i_dim < 3; ++i_dim) {
+                                final_coeffs[i_dim] = coefficients[index];
+                            }
+                            final_coeffs = prod(rotation_matrix, final_coeffs);
+                            for (IndexType i_dim = 0; i_dim < 3; ++i_dim) {
+                                relation_matrix(i_dim, 3 * index) = final_coeffs[0];
+                                relation_matrix(i_dim, 3 * index + 1) = final_coeffs[1];
+                                relation_matrix(i_dim, 3 * index + 2) = final_coeffs[2];
+                            }
                         }
                         Vector constant_vector = ZeroVector(3);
 
