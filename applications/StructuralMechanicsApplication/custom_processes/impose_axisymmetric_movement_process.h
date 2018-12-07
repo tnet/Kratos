@@ -67,6 +67,9 @@ public:
     typedef std::size_t                                                 IndexType;
     typedef std::size_t                                                  SizeType;
 
+    /// Definition of the local relation map type
+    typedef std::unordered_map<IndexType, double>            LocalRelationMapType;
+
     ///@}
     ///@name Life Cycle
     ///@{
@@ -218,6 +221,31 @@ private:
     ///@name Private Operations
     ///@{
 
+    /**
+     * @brief This creates a new node in the center of gravity as center reference
+     * @param rNodeId The reference o the new node created
+     * @param rAxisymmetricModelPart The axisymmetric model part
+     */
+    void CreateNewNode(
+        IndexType& rNodeId,
+        ModelPart& rAxisymmetricModelPart
+        );
+
+    /**
+     * @brief This fills the auxiliar model part with the auxiliar elements and nodes
+     * @param rReferenceModelPart The reference model part
+     * @param rAxisymmetricModelPart The axisymmetric model part
+     */
+    std::unordered_map<IndexType, LocalRelationMapType> FillReferenceModelPart(
+        ModelPart& rReferenceModelPart,
+        ModelPart& rAxisymmetricModelPart
+        );
+
+    /**
+     * @brief This clears the auxiliar model part
+     * @param rReferenceModelPart The reference model part
+     */
+    void ClearReferenceModelPart(ModelPart& rReferenceModelPart);
 
     ///@}
     ///@name Private  Access
