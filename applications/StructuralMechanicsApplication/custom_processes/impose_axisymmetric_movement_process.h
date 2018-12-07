@@ -9,8 +9,8 @@
 //  Main authors:    Vicente Mataix Ferrandiz
 //
 
-#if !defined(KRATOS_IMPOSE_RIGID_MOVEMENT_PROCESS)
-#define KRATOS_IMPOSE_RIGID_MOVEMENT_PROCESS
+#if !defined(KRATOS_IMPOSE_AXISYMMETRIC_MOVEMENT_PROCESS)
+#define KRATOS_IMPOSE_AXISYMMETRIC_MOVEMENT_PROCESS
 
 // System includes
 
@@ -270,4 +270,4 @@ inline std::ostream& operator << (std::ostream& rOStream,
 }
 
 }
-#endif /* KRATOS_IMPOSE_RIGID_MOVEMENT_PROCESS defined */
+#endif /* KRATOS_IMPOSE_AXISYMMETRIC_MOVEMENT_PROCESS defined */

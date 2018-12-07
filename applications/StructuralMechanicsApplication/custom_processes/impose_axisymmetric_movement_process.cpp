@@ -16,6 +16,8 @@
 // Project includes
 #include "utilities/openmp_utils.h"
 #include "custom_processes/impose_axisymmetric_movement_process.h"
+#include "custom_processes/compute_center_of_gravity_process.h"
+#include "structural_mechanics_application_variables.h"
 
 namespace Kratos
 {
@@ -28,7 +30,8 @@ ImposeAxisymmetricMovementProcess::ImposeAxisymmetricMovementProcess(
     Parameters default_parameters = Parameters(R"(
     {
         "model_part_name"             : "please_specify_model_part_name",
-        "new_model_part_name"         : "Rigid_Movement_ModelPart",
+        "new_model_part_name"         : "Axisymmetric_Movement_ModelPart",
+        "axisymmetry_axis"            : [0.0,0.0,1.0],
         "master_variable_name"        : "DISPLACEMENT",
         "slave_variable_name"         : "",
         "relation"                    : 1.0,
@@ -63,12 +66,12 @@ void ImposeAxisymmetricMovementProcess::ExecuteInitialize()
     ModelPart& root_model_part = mrThisModelPart.GetRootModelPart();
     ModelPart& model_part = root_model_part.GetSubModelPart(mThisParameters["model_part_name"].GetString());
     const std::string& new_model_part_name = mThisParameters["new_model_part_name"].GetString();
-    ModelPart& rigid_model_part = new_model_part_name != model_part.Name() ? model_part.HasSubModelPart(new_model_part_name) ? model_part.GetSubModelPart(new_model_part_name) : model_part.CreateSubModelPart(new_model_part_name) : model_part;
+    ModelPart& axisymmetric_model_part = new_model_part_name != model_part.Name() ? model_part.HasSubModelPart(new_model_part_name) ? model_part.GetSubModelPart(new_model_part_name) : model_part.CreateSubModelPart(new_model_part_name) : model_part;
 
     // Reorder constrains
     IndexType constraint_id = 1;
-    for (auto& constrain : root_model_part.MasterSlaveConstraints()) {
-        constrain.SetId(constraint_id);
+    for (auto& r_constrain : root_model_part.MasterSlaveConstraints()) {
+        r_constrain.SetId(constraint_id);
         ++constraint_id;
     }
 
@@ -127,7 +130,7 @@ void ImposeAxisymmetricMovementProcess::ExecuteInitialize()
     const int master_node_id = mThisParameters["master_node_id"].GetInt();
 
     // We iterate over the nodes of the rigid model part
-    auto nodes_array = rigid_model_part.Nodes();
+    auto nodes_array = axisymmetric_model_part.Nodes();
     const int number_of_nodes = static_cast<int>(nodes_array.size());
 
     // List of variables
@@ -141,16 +144,49 @@ void ImposeAxisymmetricMovementProcess::ExecuteInitialize()
     // Reference constraint
     const auto& r_clone_constraint = KratosComponents<MasterSlaveConstraint>::Get("LinearMasterSlaveConstraint");
 
+    // In case no existing node is assigned we create a new node in the center of gravity of the current model part
+    IndexType new_node_id = 1; // Can be used later in case we use a new node created ad hoc
+    if (master_node_id == 0) {
+        // First we compute the center of gravity
+        ComputeCenterOfGravityProcess(mrThisModelPart).Execute();
+
+        // We recover the coordinates of the center of gravity
+        const array_1d<double, 3>& center_of_gravity_coordinates = mrThisModelPart.GetProcessInfo()[CENTER_OF_GRAVITY];
+
+        // Now we create the new node
+        for (auto& r_node : root_model_part.Nodes()) {
+            r_node.SetId(new_node_id);
+            ++new_node_id;
+        }
+        axisymmetric_model_part.CreateNewNode(new_node_id, center_of_gravity_coordinates[0], center_of_gravity_coordinates[1], center_of_gravity_coordinates[2]);
+    }
+
+    // Get the axis
+    const Vector& axis_vector = mThisParameters["axisymmetry_axis"].GetVector();
+
+    // Creation of the constraints
     #pragma omp parallel
     {
         ConstraintContainerType constraints_buffer;
+        constraints_buffer.reserve(number_of_nodes);
 
         // If we master node ID is zero then we get the first node of the model part
-        NodeType::Pointer p_master_node = (master_node_id == 0) ? *(rigid_model_part.Nodes().begin()).base() : root_model_part.pGetNode(master_node_id);
+        NodeType::Pointer p_master_node = (master_node_id == 0) ? root_model_part.pGetNode(new_node_id) : root_model_part.pGetNode(master_node_id);
+        const array_1d<double, 3>& r_master_node_coordinates = p_master_node->Coordinates();
+
         #pragma omp for
         for (int i = 0; i < number_of_nodes; ++i) {
             auto it_node = nodes_array.begin() + i;
             if (it_node->Id() != p_master_node->Id()) {
+                // Compute the radius and position respect the axis
+                const array_1d<double, 3>& r_current_node_coordinates = it_node->Coordinates();
+
+                const array_1d<double, 3> vector_points = r_current_node_coordinates - r_master_node_coordinates;
+                const double distance = inner_prod(vector_points, axis_vector);
+                const array_1d<double, 3> clossest_point = r_master_node_coordinates + axis_vector * distance;
+                const array_1d<double, 3> axisymmetric_vector = clossest_point - r_current_node_coordinates;
+
+                // We create the constraints
                 for (IndexType i_var = 0; i_var < number_of_double_variables; ++i_var) {
                     auto constraint = r_clone_constraint.Create(constraint_id + (i * number_of_double_variables + i_var) + 1, *p_master_node, master_double_list_variables[i_var], *it_node, slave_double_list_variables[i_var], relation, constant);
                     (constraints_buffer).insert((constraints_buffer).begin(), constraint);
@@ -165,7 +201,7 @@ void ImposeAxisymmetricMovementProcess::ExecuteInitialize()
         // We transfer
         #pragma omp critical
         {
-            rigid_model_part.AddMasterSlaveConstraints(constraints_buffer.begin(),constraints_buffer.end());
+            axisymmetric_model_part.AddMasterSlaveConstraints(constraints_buffer.begin(),constraints_buffer.end());
             mrThisModelPart.AddMasterSlaveConstraints(constraints_buffer.begin(),constraints_buffer.end());
         }
     }
