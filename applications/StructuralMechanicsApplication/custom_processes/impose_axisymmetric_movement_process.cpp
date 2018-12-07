@@ -433,7 +433,7 @@ std::unordered_map<ImposeAxisymmetricMovementProcess::IndexType, ImposeAxisymmet
     auto triangle_2 = Triangle2D3<Point>(points_array_2);
 
     // Debug info
-    if (mThisParameters["echo_level"].GetInt() > 0) {
+    if (mThisParameters["echo_level"].GetInt() > 1) {
         KRATOS_WATCH(triangle_1)
         KRATOS_WATCH(triangle_2)
     }
@@ -456,11 +456,11 @@ std::unordered_map<ImposeAxisymmetricMovementProcess::IndexType, ImposeAxisymmet
         const auto& r_edges = r_geometry.Edges();
         for (auto& r_edge : r_edges) {
             // First intersection try
-            intersection = IntersectionUtilities::ComputeTriangleLineIntersection(triangle_1, r_edge[0].Coordinates(), r_edge[0].Coordinates(), intersection_point);
+            intersection = IntersectionUtilities::ComputeTriangleLineIntersection(triangle_1, r_edge[0].Coordinates(), r_edge[1].Coordinates(), intersection_point);
 
             // Second intersection try
             if (intersection == 0) {
-                intersection = IntersectionUtilities::ComputeTriangleLineIntersection(triangle_2, r_edge[0].Coordinates(), r_edge[0].Coordinates(), intersection_point);
+                intersection = IntersectionUtilities::ComputeTriangleLineIntersection(triangle_2, r_edge[0].Coordinates(), r_edge[1].Coordinates(), intersection_point);
             }
 
             // Create new node
