@@ -31,6 +31,8 @@ import test_vector_interface
 import test_matrix_interface
 import test_restart
 import test_gid_io_gauss_points
+import test_mortar_mapper
+import test_mortar_utilities
 import test_skin_detection_process
 import test_sparse_multiplication
 import test_variable_component
@@ -39,6 +41,7 @@ import test_object_printing
 import test_array_1d_interface
 import test_linear_master_slave_constraints
 import test_flags
+import test_time_discretization
 
 
 def AssembleTestSuites():
@@ -83,6 +86,7 @@ def AssembleTestSuites():
     smallSuite.addTests(KratosUnittest.TestLoader().loadTestsFromTestCases([test_restart.TestRestart]))
     smallSuite.addTests(KratosUnittest.TestLoader().loadTestsFromTestCases([test_gid_io_gauss_points.TestGiDIOGaussPoints]))
     smallSuite.addTests(KratosUnittest.TestLoader().loadTestsFromTestCases([test_skin_detection_process.TestSkinDetectionProcess]))
+    smallSuite.addTests(KratosUnittest.TestLoader().loadTestsFromTestCases([test_mortar_utilities.TestMortarUtilities]))
     smallSuite.addTests(KratosUnittest.TestLoader().loadTestsFromTestCases([test_sparse_multiplication.TestSparseMatrixSum]))
     smallSuite.addTests(KratosUnittest.TestLoader().loadTestsFromTestCases([test_sparse_multiplication.TestSparseMatrixTranspose]))
     smallSuite.addTests(KratosUnittest.TestLoader().loadTestsFromTestCases([test_sparse_multiplication.TestSparseMatrixMultiplication]))
@@ -96,11 +100,13 @@ def AssembleTestSuites():
     smallSuite.addTests(KratosUnittest.TestLoader().loadTestsFromTestCases([test_array_1d_interface.TestArray1DInterface]))
     smallSuite.addTests(KratosUnittest.TestLoader().loadTestsFromTestCases([test_linear_master_slave_constraints.TestLinearMultipointConstraints]))
     smallSuite.addTests(KratosUnittest.TestLoader().loadTestsFromTestCases([test_flags.TestFlags]))
+    smallSuite.addTests(KratosUnittest.TestLoader().loadTestsFromTestCases([test_time_discretization.TestTimeDiscretization]))
 
     # Create a test suite with the selected tests plus all small tests
     nightSuite = suites['nightly']
     nightSuite.addTests(smallSuite)
     nightSuite.addTests(KratosUnittest.TestLoader().loadTestsFromTestCases([test_calculate_distance_to_skin.TestCalculateDistanceToSkin]))
+    nightSuite.addTests(KratosUnittest.TestLoader().loadTestsFromTestCases([test_mortar_mapper.TestMortarMapperCore]))
 
     # Create a test suite that contains all the tests:
     allSuite = suites['all']

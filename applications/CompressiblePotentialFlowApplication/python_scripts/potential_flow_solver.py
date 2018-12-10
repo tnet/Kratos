@@ -10,8 +10,6 @@ def CreateSolver(model, custom_settings):
 class PotentialSolver(PythonSolver):
     def __init__(self, model, custom_settings):
         self.MoveMeshFlag = False
-
-        #TODO: shall obtain the compute_model_part from the MODEL once the object is implemented
         
         ##settings string in json format
         default_settings = KratosMultiphysics.Parameters("""
@@ -217,16 +215,16 @@ class PotentialSolver(PythonSolver):
         
     def GetMinimumBufferSize(self):
         return 2;
-    
+
     def GetComputingModelPart(self):
         return self.main_model_part
-        
+
     def GetOutputVariables(self):
         pass
-        
+
     def ComputeDeltaTime(self):
         pass
-        
+
     def SaveRestart(self):
         pass #one should write the restart file here
     
