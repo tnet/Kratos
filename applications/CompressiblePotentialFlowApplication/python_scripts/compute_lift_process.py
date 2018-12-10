@@ -90,7 +90,11 @@ class ComputeLiftProcess(KratosMultiphysics.Process):
         title="Cl: %.5f, Cd: %.5f" % (Cl,Cd)
         plt.title(title)
         plt.gca().invert_yaxis()
+<<<<<<< HEAD
         plt.savefig(''+self.problem_name+'.png', bbox_inches='tight')
+=======
+        plt.savefig(self.problem_name+'.png', bbox_inches='tight')
+>>>>>>> CompressiblePotentialFlow/feature-embedded-mesh-implementation
         plt.close('all')
         print('RZ = ', RZ)
 

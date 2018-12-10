@@ -340,8 +340,9 @@ public:
             }
             else {
                 if (this->Is(FLUID) || this->IsNotDefined(FLUID))
-                ComputeLHSGaussPointContribution(data.vol,rLeftHandSideMatrix,data); 
-            }        
+                    ComputeLHSGaussPointContribution(data.vol,rLeftHandSideMatrix,data); 
+            } 
+             
             noalias(rRightHandSideVector) = -prod(rLeftHandSideMatrix, data.phis);
         }
         else //it is a wake element
@@ -409,7 +410,7 @@ public:
                 }
             }
             
-            double penalty = rCurrentProcessInfo[INITIAL_PENALTY];
+            double penalty =10000.0;//rCurrentProcessInfo[INITIAL_PENALTY];
 
             //also next version works - NON SYMMETRIC - but it does not require a penalty
 //                 array_1d<double,Dim> n = prod(data.DN_DX,data.distances); //rCurrentProcessInfo[VELOCITY]; 
@@ -422,7 +423,7 @@ public:
 //                 noalias(tmp) = prod(data.DN_DX,P);
 //                 bounded_matrix<double,NumNodes,NumNodes> tangent_constraint = /*1e3**/data.vol*prod(tmp, trans(data.DN_DX));
                 if(kutta_element)
-                {
+                { std::cout<<"SOLVING KUTTA ELEMENT"<<std::endl;
                     for(unsigned int i=0; i<NumNodes; ++i)
                     {
                         for(unsigned int j=0; j<NumNodes; ++j)
@@ -694,7 +695,7 @@ protected:
             data.phis[i] = GetGeometry()[i].FastGetSolutionStepValue(POSITIVE_POTENTIAL);
 
         GeometryUtils::CalculateGeometryData(GetGeometry(), data.DN_DX, data.N, data.vol);    
-        noalias(velocity) = -prod(trans(data.DN_DX), data.phis);
+        noalias(velocity) = prod(trans(data.DN_DX), data.phis);
             
     }
 
@@ -715,7 +716,7 @@ protected:
         }            
         GeometryUtils::CalculateGeometryData(GetGeometry(), data.DN_DX, data.N, data.vol);
 
-        noalias(velocity) = -prod(trans(data.DN_DX), data.phis);
+        noalias(velocity) = prod(trans(data.DN_DX), data.phis);
     }
 
     void ComputeVelocityLowerWakeElement(array_1d<double,Dim>& velocity)
@@ -736,7 +737,7 @@ protected:
 
         GeometryUtils::CalculateGeometryData(GetGeometry(), data.DN_DX, data.N, data.vol);
 
-        noalias(velocity) = -prod(trans(data.DN_DX), data.phis);
+        noalias(velocity) = prod(trans(data.DN_DX), data.phis);
 
     }
 
@@ -751,7 +752,7 @@ protected:
         const double vlownorm = inner_prod(lower_wake_velocity, lower_wake_velocity);
 
         if (std::abs(vupnorm - vlownorm) > 0.1)
-            std::cout << "WAKE CONDITION NOT FULFILLED IN ELEMENT # " << this->Id() << std::endl;
+            std::cout << "WAKE CONDITION NOT FULFILLED IN ELEMENT # " << this->Id()<<"    " <<std::abs(vupnorm - vlownorm)<< std::endl;
     }
 
     double ComputePressure(const ProcessInfo& rCurrentProcessInfo)

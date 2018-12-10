@@ -11,8 +11,8 @@
 //
 
 
-#ifndef KRATOS_INCOMPRESSIBLE_POTENTIAL_WALL_CONDITION_H
-#define KRATOS_INCOMPRESSIBLE_POTENTIAL_WALL_CONDITION_H
+#ifndef KRATOS_INCOMPRESSIBLE_POTENTIAL_WALL_CONDITION_STRESSES_H
+#define KRATOS_INCOMPRESSIBLE_POTENTIAL_WALL_CONDITION_STRESSES_H
 
 // System includes
 #include <string>
@@ -61,14 +61,14 @@ namespace Kratos
 
 /// Implements a wall condition for the potential flow formulation
 template< unsigned int TDim, unsigned int TNumNodes = TDim >
-class IncompressiblePotentialWallCondition : public Condition
+class IncompressibleStressesPotentialWallCondition : public Condition
 {
 public:
     ///@name Type Definitions
     ///@{
 
-    /// Pointer definition of IncompressiblePotentialWallCondition
-    KRATOS_CLASS_POINTER_DEFINITION(IncompressiblePotentialWallCondition);
+    /// Pointer definition of IncompressibleStressesPotentialWallCondition
+    KRATOS_CLASS_POINTER_DEFINITION(IncompressibleStressesPotentialWallCondition);
 
     typedef Node < 3 > NodeType;
 
@@ -92,6 +92,8 @@ public:
 
     typedef PointerVectorSet<Dof<double>, IndexedObject> DofsArrayType;
 
+    typedef VectorMap<IndexType, DataValueContainer> SolutionStepsConditionalDataContainerType;
+
     typedef Element::WeakPointer ElementWeakPointerType;
     
     typedef Element::Pointer ElementPointerType;
@@ -104,7 +106,7 @@ public:
     /** Admits an Id as a parameter.
       @param NewId Index for the new condition
       */
-    IncompressiblePotentialWallCondition(IndexType NewId = 0):
+    IncompressibleStressesPotentialWallCondition(IndexType NewId = 0):
         Condition(NewId)
     {
     }
@@ -114,7 +116,7 @@ public:
      @param NewId Index of the new condition
      @param ThisNodes An array containing the nodes of the new condition
      */
-    IncompressiblePotentialWallCondition(IndexType NewId,
+    IncompressibleStressesPotentialWallCondition(IndexType NewId,
                            const NodesArrayType& ThisNodes):
         Condition(NewId,ThisNodes)
     {
@@ -125,7 +127,7 @@ public:
      @param NewId Index of the new condition
      @param pGeometry Pointer to a geometry object
      */
-    IncompressiblePotentialWallCondition(IndexType NewId,
+    IncompressibleStressesPotentialWallCondition(IndexType NewId,
                            GeometryType::Pointer pGeometry):
         Condition(NewId,pGeometry)
     {
@@ -137,7 +139,7 @@ public:
      @param pGeometry Pointer to a geometry object
      @param pProperties Pointer to the element's properties
      */
-    IncompressiblePotentialWallCondition(IndexType NewId,
+    IncompressibleStressesPotentialWallCondition(IndexType NewId,
                            GeometryType::Pointer pGeometry,
                            PropertiesType::Pointer pProperties):
         Condition(NewId,pGeometry,pProperties)
@@ -145,13 +147,13 @@ public:
     }
 
     /// Copy constructor.
-    IncompressiblePotentialWallCondition(IncompressiblePotentialWallCondition const& rOther):
+    IncompressibleStressesPotentialWallCondition(IncompressibleStressesPotentialWallCondition const& rOther):
         Condition(rOther)
     {
     }
 
     /// Destructor.
-    ~IncompressiblePotentialWallCondition() override {}
+    ~IncompressibleStressesPotentialWallCondition() override {}
 
 
     ///@}
@@ -159,7 +161,7 @@ public:
     ///@{
 
     /// Copy constructor
-    IncompressiblePotentialWallCondition & operator=(IncompressiblePotentialWallCondition const& rOther)
+    IncompressibleStressesPotentialWallCondition & operator=(IncompressibleStressesPotentialWallCondition const& rOther)
     {
         Condition::operator=(rOther);
         return *this;
@@ -169,7 +171,7 @@ public:
     ///@name Operations
     ///@{
 
-    /// Create a new IncompressiblePotentialWallCondition object.
+    /// Create a new IncompressibleStressesPotentialWallCondition object.
     /**
       @param NewId Index of the new condition
       @param ThisNodes An array containing the nodes of the new condition
@@ -177,13 +179,13 @@ public:
       */
     Condition::Pointer Create(IndexType NewId, NodesArrayType const& ThisNodes, PropertiesType::Pointer pProperties) const override
     {
-        return Condition::Pointer(new IncompressiblePotentialWallCondition(NewId, GetGeometry().Create(ThisNodes), pProperties));
+        return Condition::Pointer(new IncompressibleStressesPotentialWallCondition(NewId, GetGeometry().Create(ThisNodes), pProperties));
     }
 
 
     Condition::Pointer Create(IndexType NewId, Condition::GeometryType::Pointer pGeom, PropertiesType::Pointer pProperties) const override
     {
-        return Condition::Pointer(new IncompressiblePotentialWallCondition(NewId, pGeom, pProperties));
+        return Condition::Pointer(new IncompressibleStressesPotentialWallCondition(NewId, pGeom, pProperties));
     }
 
     /**
@@ -263,7 +265,7 @@ public:
             else
                 CalculateNormal3D(An);
 
-            const IncompressiblePotentialWallCondition &r_this = *this;
+            const IncompressibleStressesPotentialWallCondition &r_this = *this;
             const array_1d<double, 3> &v = r_this.GetValue(VELOCITY_INFINITY);
             const double value = inner_prod(v, An) / static_cast<double>(TNumNodes);
 
@@ -283,7 +285,7 @@ public:
             
             bool is_not_cut;
             GetWakeDistances(distances,is_not_cut);
-
+            
             
             if (TDim == 2){
                 CalculateNormal2DCut(An_0,An_1,distances);
@@ -297,6 +299,14 @@ public:
             
             value_0 = inner_prod(v, An_0);
             value_1 = inner_prod(v, An_1);
+            KRATOS_WATCH(An_0)
+            KRATOS_WATCH(An_1)
+            KRATOS_WATCH(N_0)
+            KRATOS_WATCH(N_1)
+
+            KRATOS_WATCH(v)
+            
+
 
             if(distances[0] > 0){ 
                 rRightHandSideVector[0] = value_0*N_0[0];
@@ -514,7 +524,7 @@ public:
         /// Print information about this object.
         void PrintInfo(std::ostream& rOStream) const override
         {
-            rOStream << "IncompressiblePotentialWallCondition" << TDim << "D #" << this->Id();
+            rOStream << "IncompressibleStressesPotentialWallCondition" << TDim << "D #" << this->Id();
         }
 
         /// Print object's data.
@@ -731,7 +741,7 @@ private:
 
         ///@}
 
-    }; // Class IncompressiblePotentialWallCondition
+    }; // Class IncompressibleStressesPotentialWallCondition
 
 
     ///@}
@@ -748,7 +758,7 @@ private:
     /// input stream function
     template< unsigned int TDim, unsigned int TNumNodes >
     inline std::istream& operator >> (std::istream& rIStream,
-                                      IncompressiblePotentialWallCondition<TDim,TNumNodes>& rThis)
+                                      IncompressibleStressesPotentialWallCondition<TDim,TNumNodes>& rThis)
     {
         return rIStream;
     }
@@ -756,7 +766,7 @@ private:
     /// output stream function
     template< unsigned int TDim, unsigned int TNumNodes >
     inline std::ostream& operator << (std::ostream& rOStream,
-                                      const IncompressiblePotentialWallCondition<TDim,TNumNodes>& rThis)
+                                      const IncompressibleStressesPotentialWallCondition<TDim,TNumNodes>& rThis)
     {
         rThis.PrintInfo(rOStream);
         rOStream << std::endl;

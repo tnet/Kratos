@@ -2,7 +2,6 @@ import KratosMultiphysics
 import KratosMultiphysics.CompressiblePotentialFlowApplication
 from numpy import *
 import itertools
-import os
 import matplotlib.pyplot as plt
 
 def Factory(settings, Model):
@@ -17,24 +16,28 @@ class ComputeLiftProcess(KratosMultiphysics.Process):
         default_parameters = KratosMultiphysics.Parameters("""
             {
                 
-                "fluid_part_name" : "please specify the model part that contains the upper surface nodes",
+                "fluid_part_name" : "please specify the main model part",
                 "mesh_id": 0,
                 "velocity_infinity": [1.0,0.0,0],
                 "reference_area": 1,
-                "problem_name": "please specify problem name"
+                "problem_name": "embedded_potential_flow"
             }  """)
 
         settings.ValidateAndAssignDefaults(default_parameters)
         self.problem_name=settings["problem_name"].GetString()
-        self.fluid_model_part=Model.GetModelPart(settings["fluid_part_name"].GetString()) 
-        self.result_force=KratosMultiphysics.Vector(3)       
+        self.fluid_model_part=Model.GetModelPart(settings["fluid_part_name"].GetString()).GetRootModelPart() 
+        self.result_force=KratosMultiphysics.Vector(3)  
+        self.dRdu=KratosMultiphysics.Matrix(self.fluid_model_part.NumberOfNodes(),self.fluid_model_part.NumberOfNodes())
+        self.dRdx=KratosMultiphysics.Matrix(self.fluid_model_part.NumberOfNodes(),self.fluid_model_part.NumberOfNodes())     
+        self.dFdu=KratosMultiphysics.Vector(self.fluid_model_part.NumberOfNodes())          
         self.process=KratosMultiphysics.CompressiblePotentialFlowApplication.ComputeLiftLevelSetProcess(self.fluid_model_part,self.result_force)
+        self.adjoint=KratosMultiphysics.CompressiblePotentialFlowApplication.ComputeGradientAdjointProcess(self.fluid_model_part,self.dRdu,self.dRdx,self.dFdu)       
 
 
     def ExecuteFinalizeSolutionStep(self):
         print("wip_compute_lift_level_set_process")
         self.process.Execute()
-
+        # self.adjoint.Execute()
         x_upper=[]
         cp_upper=[]
         x_lower=[]
@@ -57,14 +60,15 @@ class ComputeLiftProcess(KratosMultiphysics.Process):
         for i in range(0,len(x_lower)):
             x_lower[i]=(x_lower[i]-min_x)/abs(max_x-min_x)
         print("Cl:",self.result_force[1]) 
-        print("Cd:",self.result_force[0])       
-        plt.plot(x_upper,cp_upper,'o',label='Upper surface')
-        plt.plot(x_lower,cp_lower,'ro',label='Lower surface')
-        title="Cl: %.5f, Cd: %.5f" % (self.result_force[1],self.result_force[0])
-        plt.title(title)
-        plt.legend()
-        plt.gca().invert_yaxis()
-        # plt.show()
-        plt.savefig('./Figures/'+self.problem_name+'.png', bbox_inches='tight')
-        plt.close('all')
+        print("Cd:",self.result_force[0])   
+        self.fluid_model_part.SetValue(KratosMultiphysics.FRICTION_COEFFICIENT,self.result_force[1])
+        # plt.plot(x_upper,cp_upper,'o',label='Upper surface')
+        # plt.plot(x_lower,cp_lower,'ro',label='Lower surface')
+        # title="Cl: %.5f, Cd: %.5f" % (self.result_force[1],self.result_force[0])
+        # plt.title(title)
+        # plt.legend()
+        # plt.gca().invert_yaxis()
+        # # plt.show()
+        # plt.savefig(self.problem_name+'.png', bbox_inches='tight')
+        # plt.close('all')
     

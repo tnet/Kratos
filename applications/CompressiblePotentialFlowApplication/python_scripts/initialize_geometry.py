@@ -24,9 +24,11 @@ class InitializeGeometryProcess(KratosMultiphysics.Process):
             {   
                 "model_part_name": "insert_model_part",
                 "skin_model_part_name": "insert_skin_model_part",
-                "geometry_parameter": 1.0,
+                "geometry_parameter": 0.0,
                 "remeshing_flag": false,
                 "initial_point": [0,0],
+                "node_id": -1,
+                "epsilon": 1e-9,
                 "metric_parameters":  {
                     "minimal_size"                         : 1e-2, 
                     "enforce_current"                      : true, 
@@ -34,7 +36,7 @@ class InitializeGeometryProcess(KratosMultiphysics.Process):
                     "anisotropy_parameters": {   
                         "reference_variable_name"          : "DISTANCE",
                         "hmin_over_hmax_anisotropic_ratio"      : 0.5, 
-                        "boundary_layer_max_distance"           : 0.5, 
+                        "boundary_layer_max_distance"           : 1, 
                         "interpolation"                         : "Linear"
                     }
                 }
@@ -49,7 +51,11 @@ class InitializeGeometryProcess(KratosMultiphysics.Process):
         self.initial_point[0] = settings["initial_point"][0].GetDouble()
         self.initial_point[1] = settings["initial_point"][1].GetDouble()
         self.skin_model_part=self.model.CreateModelPart("skin")
-        KratosMultiphysics.ModelPartIO(settings["skin_model_part_name"].GetString()).ReadModelPart(self.skin_model_part)
+        self.skin_model_part_name=settings["skin_model_part_name"].GetString()
+        KratosMultiphysics.ModelPartIO(self.skin_model_part_name).ReadModelPart(self.skin_model_part)
+
+        self.node_id=settings["node_id"].GetInt()
+        self.epsilon=settings["epsilon"].GetDouble()
         
         self.MetricParameters = settings["metric_parameters"]
         # We set to zero the metric
@@ -81,6 +87,7 @@ class InitializeGeometryProcess(KratosMultiphysics.Process):
         print("Executing Initialize Geometry")
         self.InitializeSkinModelPart()
         self.CalculateDistance()
+        self.PerturbateDistanceNumericalGradient()
         if (self.do_remeshing):
             self.RefineMesh()
             self.CalculateDistance()
@@ -93,16 +100,36 @@ class InitializeGeometryProcess(KratosMultiphysics.Process):
         self.Execute()
 
     def InitializeSkinModelPart(self):
-        angle=math.radians(-self.geometry_parameter)
-        origin=[0.25+self.initial_point[0],0+self.initial_point[1]] #to be defined from skin model part
-        RotateModelPart(origin,angle,self.skin_model_part)
-        for node in self.skin_model_part.Nodes:
-            node.X=node.X+1e-5
-            node.Y=node.Y+1e-5
+        if self.skin_model_part_name=='naca0012':
+            angle=math.radians(-self.geometry_parameter)
+            origin=[0.25+self.initial_point[0],0+self.initial_point[1]] #to be defined from skin model part          
+            for node in self.skin_model_part.Nodes:
+                node.X=self.initial_point[0]+2*node.X+1e-5
+                node.Y=2*node.Y+1e-5
+            RotateModelPart(origin,angle,self.skin_model_part)
+        elif self.skin_model_part_name=='circle':
+            for node in self.skin_model_part.Nodes:
+                node.X=node.X+1e-5
+                node.Y=node.Y+1e-5
+
 
     def CalculateDistance(self):
         KratosMultiphysics.CalculateDistanceToSkinProcess2D(self.main_model_part, self.skin_model_part).Execute()
         KratosMultiphysics.VariableUtils().CopyScalarVar(KratosMultiphysics.DISTANCE,CompressiblePotentialFlow.LEVEL_SET_DISTANCE, self.main_model_part.Nodes)
+        return
+    def PerturbateDistanceNumericalGradient(self):
+        if self.node_id>0.0:
+            print("IM IN")
+            print(self.node_id)
+            for node in self.main_model_part.Nodes:
+                if node.Id==self.node_id:
+                    distance=node.GetSolutionStepValue(CompressiblePotentialFlow.LEVEL_SET_DISTANCE)
+                    node.SetSolutionStepValue(CompressiblePotentialFlow.LEVEL_SET_DISTANCE,distance+self.epsilon)
+                    break
+            # distance=self.main_model_part.GetNodes(self.node_id).GetSolutionStepValue(CompressiblePotentialFlow.LEVEL_SET_DISTANCE)
+            print("distance value about to be perturbated:",distance)
+            # self.main_model_part.GetNodes(node_id).SetSolutionStepValue(CompressiblePotentialFlow.LEVEL_SET_DISTANCE,distance+self.epsilon)
+        return
 
     def RefineMesh(self):
         KratosMultiphysics.VariableUtils().CopyScalarVar(CompressiblePotentialFlow.LEVEL_SET_DISTANCE,KratosMultiphysics.DISTANCE, self.main_model_part.Nodes)
@@ -161,12 +188,8 @@ class InitializeGeometryProcess(KratosMultiphysics.Process):
                     IsNegative=True
             if IsPositive and IsNegative:
                 element.Set(KratosMultiphysics.BOUNDARY,True)
-                for node in element.GetNodes():
-                    node.Set(KratosMultiphysics.VISITED,True)
             elif IsPositive:
                 element.Set(KratosMultiphysics.FLUID,True)
-                for node in element.GetNodes():
-                    node.Set(KratosMultiphysics.VISITED,True)
             else:
                 element.Set(KratosMultiphysics.FLUID,False)
                 element.Set(KratosMultiphysics.ACTIVE,False)

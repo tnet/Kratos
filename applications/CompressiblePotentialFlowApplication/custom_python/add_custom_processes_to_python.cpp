@@ -20,6 +20,8 @@
 #include "custom_python/add_custom_processes_to_python.h"
 #include "custom_processes/kutta_condition_process.h"
 #include "custom_processes/compute_lift_level_set_process.h"
+#include "custom_processes/compute_gradient_adjoint_process.h"
+#include "custom_processes/get_equation_id.h"
 
 namespace Kratos {
 namespace Python {
@@ -31,14 +33,22 @@ void  AddCustomProcessesToPython(pybind11::module& m)
         class_<KuttaConditionProcess, KuttaConditionProcess::Pointer, Process >
         (m, "KuttaConditionProcess")
         .def(init<ModelPart&>())
-        .def("Execute",&KuttaConditionProcess::Execute)
-            ;
+        .def("Execute",&KuttaConditionProcess::Execute);
 
         class_<ComputeLiftLevelSetProcess, ComputeLiftLevelSetProcess::Pointer, Process >
         (m, "ComputeLiftLevelSetProcess")
         .def(init<ModelPart&,Vector&>())
-        .def("Execute",&ComputeLiftLevelSetProcess::Execute)
-            ;
+        .def("Execute",&ComputeLiftLevelSetProcess::Execute);
+
+        class_<ComputeGradientAdjointProcess, ComputeGradientAdjointProcess::Pointer, Process >
+        (m, "ComputeGradientAdjointProcess")
+        .def(init<ModelPart&,Matrix&,Matrix&,Vector&>())
+        .def("Execute",&ComputeGradientAdjointProcess::Execute);
+
+        class_<GetEquationId, GetEquationId::Pointer, Process >
+        (m, "GetEquationId")
+        .def(init<ModelPart&,Vector&,int>())
+        .def("Execute",&GetEquationId::Execute);
   }
 
 }  // namespace Python.

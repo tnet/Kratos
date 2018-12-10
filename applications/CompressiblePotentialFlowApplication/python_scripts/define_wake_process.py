@@ -45,6 +45,10 @@ class DefineWakeProcess(KratosMultiphysics.Process):
         self.epsilon = settings["epsilon"].GetDouble()
         
         self.fluid_model_part = Model.GetModelPart(settings["fluid_part_name"].GetString()).GetRootModelPart()
+        for element in self.fluid_model_part.Elements:
+            element.SetValue(KratosMultiphysics.Y1,0)
+            element.SetValue(KratosMultiphysics.Y2,0)
+
         self.model=Model
         self.wake_model_part_name=settings["model_part_name"].GetString()
         
@@ -100,6 +104,10 @@ class DefineWakeProcess(KratosMultiphysics.Process):
         KratosMultiphysics.ModelPartIO("wake").ReadModelPart(self.wake_line_model_part)   
         origin=[0.25,0]  
         angle=math.radians(-self.geometry_parameter) 
+        
+        for node in self.wake_line_model_part.Nodes:
+            node.X=node.X+1e-4
+            node.Y=node.Y+1e-4
         RotateModelPart(origin,angle,self.wake_line_model_part)
         KratosMultiphysics.CalculateDiscontinuousDistanceToSkinProcess2D(self.fluid_model_part, self.wake_line_model_part).Execute()
         for elem in self.fluid_model_part.Elements:
@@ -163,6 +171,9 @@ class DefineWakeProcess(KratosMultiphysics.Process):
                     elem.SetValue(KratosMultiphysics.ELEMENTAL_DISTANCES,distances)
                 if(nneg>0 and npos>0) and (nneg_ls>0 and npos_ls>0):
                     elem.Set(KratosMultiphysics.INTERFACE) 
+                    for elnode in elem.GetNodes():
+                        elnode.Set(KratosMultiphysics.THERMAL,True)
+                    print('KUTTA ELEMENT:',elem.Id)
                     elem.Set(KratosMultiphysics.ACTIVE,True)
                     
             from gid_output_process import GiDOutputProcess
