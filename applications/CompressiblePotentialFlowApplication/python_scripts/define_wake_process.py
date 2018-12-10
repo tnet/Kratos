@@ -192,7 +192,11 @@ class DefineWakeProcess(KratosMultiphysics.Process):
             gid_output.ExecuteFinalize()
                                         
         else:
-            self.kutta_model_part = self.model.GetModelPart(self.wake_model_part_name)         
+            self.kutta_model_part = self.model.GetModelPart(self.wake_model_part_name)    
+            print(self.model)  
+            print(self.wake_model_part_name)
+            print(self.kutta_model_part)
+            stop   
             KratosMultiphysics.NormalCalculationUtils().CalculateOnSimplex(self.fluid_model_part,self.fluid_model_part.ProcessInfo[KratosMultiphysics.DOMAIN_SIZE])
 
             # Neigbour search tool instance
