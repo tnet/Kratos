@@ -17,12 +17,22 @@ KratosMultiphysics.Logger.GetDefaultOutput().SetSeverity(KratosMultiphysics.Logg
 from potential_flow_analysis import PotentialFlowAnalysis
 
 # Import pycompss
-from pycompss.api.task import task
-from pycompss.api.api import compss_wait_on
-from pycompss.api.parameter import *
+# from pycompss.api.task import task
+# from pycompss.api.api import compss_wait_on
+# from pycompss.api.parameter import *
+
+# Import exaqute
+# from exaqute.ExaquteTaskPyCOMPSs import *   # to exequte with pycompss
+# from exaqute.ExaquteTaskHyperLoom import *  # to exequte with the IT4 scheduler
+from exaqute.ExaquteTaskLocal import *      # to execute with python3
+# get_value_from_remote is the equivalent of compss_wait_on
+# in the future, when everything is integrated with the it4i team, putting exaqute.ExaquteTaskHyperLoom you can launch your code with their scheduler instead of BSC
 
 # Import Monte Carlo library
 import mc_utilities as mc
+
+# Import variables class
+from cmlmc_utilities_CLASS import StatisticalVariable
 
 # Import cpickle to pickle the serializer
 try:
@@ -31,33 +41,10 @@ except ImportError:
     import pickle
 
 class MonteCarloAnalysis(PotentialFlowAnalysis):
-    """Main script for Monte Carlo simulations"""
-    
-    def __init__(self,serialized_model,serialized_parameters,sample):
-        if (type(serialized_model) == KratosMultiphysics.StreamSerializer):
-            #pickle dataserialized_data
-            pickled_data = pickle.dumps(serialized_model, 2) #second argument is the protocol and is NECESSARY (according to pybind11 docs)
-            #overwrite the old serializer with the unpickled one
-            serialized_model = pickle.loads(pickled_data)
-            model = KratosMultiphysics.Model()
-            serialized_model.Load("ModelSerialization",model)
-        else:
-            model = serialized_model
-            del(serialized_model)
-
-        if (type(serialized_parameters) == KratosMultiphysics.StreamSerializer):
-            #pickle dataserialized_data
-            pickled_data = pickle.dumps(serialized_parameters, 2) #second argument is the protocol and is NECESSARY (according to pybind11 docs)
-            #overwrite the old serializer with the unpickled one
-            serialized_parameters = pickle.loads(pickled_data)
-            parameters = KratosMultiphysics.Parameters()
-            serialized_parameters.Load("ParametersSerialization",parameters)
-        else:
-            parameters = serialized_parameters
-            del(serialized_parameters)
-        
+    """Main analyis stage for Monte Carlo simulations"""
+    def __init__(self,input_model,input_parameters,sample):
         self.sample = sample
-        super(MonteCarloAnalysis,self).__init__(model,parameters)
+        super(MonteCarloAnalysis,self).__init__(input_model,input_parameters)
         # self._GetSolver().main_model_part.AddNodalSolutionStepVariable(KratosMultiphysics.NODAL_AREA)
     
     def _GetSimulationName(self):
@@ -111,7 +98,6 @@ def EvaluateQuantityOfInterest(simulation):
     Q = simulation._GetSolver().main_model_part.GetValue(KratosMultiphysics.FRICTION_COEFFICIENT)
     return Q
 
-
 '''
 function executing the problem
 input:
@@ -120,10 +106,20 @@ input:
 output:
         QoI         : Quantity of Interest
 '''
-@task(returns=1)
-def execution_task(model, parameters):
+@ExaquteTask(returns=1)
+def ExecuteTask(pickled_model, pickled_parameters):
+    '''overwrite the old model serializer with the unpickled one'''
+    model_serializer = pickle.loads(pickled_model)
+    current_model = KratosMultiphysics.Model()
+    model_serializer.Load("ModelSerialization",current_model)
+    del(model_serializer)
+    '''overwrite the old parameters serializer with the unpickled one'''
+    serialized_parameters = pickle.loads(pickled_parameters)
+    current_parameters = KratosMultiphysics.Parameters()
+    serialized_parameters.Load("ParametersSerialization",current_parameters)
+    del(serialized_parameters)
     sample = GenerateSample()
-    simulation = MonteCarloAnalysis(model,parameters,sample)
+    simulation = MonteCarloAnalysis(current_model,current_parameters,sample)
     simulation.Run()
     QoI = EvaluateQuantityOfInterest(simulation)
     return QoI
@@ -135,57 +131,70 @@ input:
         model       : serialization of the model
         parameters  : serialization of the Project Parameters
 output:
-        ExactExpectedValueQoI : Quantity of Interest for sample = 1.0
+        ExactExpectedValueQoI : Quantity of Interest for sample = [0.7,0.0]
 '''
-@task(returns=1)
-def exact_execution_task(model_part_file_name, parameter_file_name):
+@ExaquteTask(returns=1)
+def ExecuteExactTask(pickled_model, pickled_parameters):
+    '''overwrite the old model serializer with the unpickled one'''
+    model_serializer = pickle.loads(pickled_model)
+    current_model = KratosMultiphysics.Model()
+    model_serializer.Load("ModelSerialization",current_model)
+    del(model_serializer)
+    '''overwrite the old parameters serializer with the unpickled one'''
+    serialized_parameters = pickle.loads(pickled_parameters)
+    current_parameters = KratosMultiphysics.Parameters()
+    serialized_parameters.Load("ParametersSerialization",current_parameters)
+    del(serialized_parameters)
     sample = [0.7,0.0]
-    simulation = MonteCarloAnalysis(model,parameters,sample)
-    simulation.Run() 
+    simulation = MonteCarloAnalysis(current_model,current_parameters,sample)
+    simulation.Run()
     ExactExpectedValueQoI = EvaluateQuantityOfInterest(simulation)
     return ExactExpectedValueQoI
 
 
 '''
 function serializing the model and the parameters of the problem
+the idea is the following:
+first from Model/Parameters Kratos object to StreamSerializer Kratos object
+second from StreamSerializer Kratos object to pickle string
+third from pickle string to StreamSerializer Kratos object
+fourth from StreamSerializer Kratos object to Model/Parameters Kratos object
 input:
-        model_part_file_name  : path of the model part file
         parameter_file_name   : path of the Project Parameters file
 output:
         serialized_model      : model serialized
         serialized_parameters : project parameters serialized
 '''
-@task(model_part_file_name=FILE_IN, parameter_file_name=FILE_IN,returns=2)
-def serialize_model_projectparameters(model_part_file_name, parameter_file_name):
-# @task(parameter_file_name=FILE_IN,returns=2)
-# def serialize_model_projectparameters(parameter_file_name):
+@ExaquteTask(parameter_file_name=FILE_IN,returns=2)
+def SerializeModelParameters(parameter_file_name):
     with open(parameter_file_name,'r') as parameter_file:
         parameters = KratosMultiphysics.Parameters(parameter_file.read())
     local_parameters = parameters
-    model = KratosMultiphysics.Model()      
-    local_parameters["solver_settings"]["model_import_settings"]["input_filename"].SetString(model_part_file_name[:-5])
+    model = KratosMultiphysics.Model()
+    # local_parameters["solver_settings"]["model_import_settings"]["input_filename"].SetString(model_part_file_name[:-5])
     fake_sample = [0.7,0.0]
-
     simulation = MonteCarloAnalysis(model,local_parameters,fake_sample)
     simulation.Initialize()
-
     serialized_model = KratosMultiphysics.StreamSerializer()
     serialized_model.Save("ModelSerialization",simulation.model)
     serialized_parameters = KratosMultiphysics.StreamSerializer()
     serialized_parameters.Save("ParametersSerialization",simulation.project_parameters)
-    return serialized_model, serialized_parameters
+    # pickle dataserialized_data
+    pickled_model = pickle.dumps(serialized_model, 2) # second argument is the protocol and is NECESSARY (according to pybind11 docs)
+    pickled_parameters = pickle.dumps(serialized_parameters, 2)
+    return pickled_model, pickled_parameters
 
 
 '''
 function computing the relative error between the Multilevel Monte Carlo expected value and the exact expected value
 input :
-        AveragedMeanQoI       : Monte Carlo expected value
+        AveragedMeanQoI       : Multilevel Monte Carlo expected value
         ExactExpectedValueQoI : exact expected value
 output :
         relative_error        : relative error
 '''
-@task(returns=1)
-def compare_mean(AveragedMeanQoI,ExactExpectedValueQoI):
+@ExaquteTask(returns=1)
+def CompareMean(AveragedMeanQoI,ExactExpectedValueQoI):
     relative_error = abs((AveragedMeanQoI - ExactExpectedValueQoI)/ExactExpectedValueQoI)
     return relative_error
 
@@ -207,29 +216,26 @@ if __name__ == '__main__':
     else: # using default name
         parameter_file_name = "/home/kratos105b/DataDisk/MultilevelMonteCarloApplication/CompressiblePotentialFlow/ProjectParameters2.json"
 
-    with open(parameter_file_name,'r') as parameter_file:
-        parameters = KratosMultiphysics.Parameters(parameter_file.read())
-    local_parameters = parameters # in case there are more parameters file, we rename them
-
     '''create a serialization of the model and of the project parameters'''
-    serialized_model,serialized_parameters = serialize_model_projectparameters(local_parameters["solver_settings"]["model_import_settings"]["input_filename"].GetString() + ".mdpa", parameter_file_name)
-    # serialized_model,serialized_parameters = serialize_model_projectparameters(parameter_file_name)
+    pickled_model,pickled_parameters = SerializeModelParameters(parameter_file_name)
+    print("\n############## Serialization completed ##############\n")
 
-    number_samples = 10
-    Qlist = []
+    number_samples = 1
+    QoI = StatisticalVariable()
+    '''to exploit StatisticalVariable UpdateOnePassMeanVariance function we need to initialize a level 0 in values, mean, sample variance and second moment
+    and store in this level the informations'''
+    QoI.values = [[] for i in range (1)]
+    QoI.mean = [[] for i in range (1)]
+    QoI.second_moment = [[] for i in range (1)]
+    QoI.sample_variance = [[] for i in range (1)]
 
     for instance in range (0,number_samples):
-        Qlist.append(execution_task(serialized_model,serialized_parameters))
+        QoI.values[0].append(ExecuteTask(pickled_model,pickled_parameters))
 
     '''Compute mean, second moment and sample variance'''
-    MC_mean = 0.0
-    MC_second_moment = 0.0
-    for i in range (0,number_samples):
-        nsam = i+1
-        MC_mean, MC_second_moment, MC_variance = mc.update_onepass_M_VAR(Qlist[i], MC_mean, MC_second_moment, nsam)
+    for i_sample in range (0,number_samples):
+        QoI.UpdateOnepassMeanVariance(0,i_sample)
 
-    MC_mean = compss_wait_on(MC_mean)
-    Qlist = compss_wait_on(Qlist)
-    print("\nlist of lift coefficients computed = ",Qlist)
-    print("\nMC mean = ",MC_mean)
+    QoI = get_value_from_remote(QoI)
+    print("\nMC mean lift coefficient = ",QoI.mean)
     
