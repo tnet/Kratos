@@ -889,8 +889,7 @@ public:
                 }
 
                 array_1d<double,Dim> vaux = prod(trans(data.DN_DX), data.phis);
-                double vupnorm = inner_prod(vaux,vaux);
-
+                // double vupnorm = inner_prod(vaux,vaux);
                 //taking only negative part
                 for (unsigned int i = 0; i < NumNodes; i++)
                 {
@@ -901,7 +900,7 @@ public:
                 }
 
                 array_1d<double,Dim> vtest = prod(trans(data.DN_DX), data.phis);
-                double vdownnorm = inner_prod(vtest,vtest);
+                // double vdownnorm = inner_prod(vtest,vtest);
 
                 // if( abs(vupnorm - vdownnorm) > 0.1)
                 // {

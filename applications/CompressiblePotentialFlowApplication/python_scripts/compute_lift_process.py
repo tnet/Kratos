@@ -48,12 +48,11 @@ class ComputeLiftProcess(KratosMultiphysics.Process):
         rz = 0.0
 
         for cond in itertools.chain(self.upper_surface_model_part.Conditions, self.lower_surface_model_part.Conditions):
-           n = cond.GetValue(NORMAL)
-           cp = cond.GetValue(PRESSURE)
-           print(cp)
-           rx += n[0]*cp
-           ry += n[1]*cp
-           rz += n[2]*cp
+            n = cond.GetValue(NORMAL)
+            cp = -cond.GetValue(PRESSURE)
+            rx += n[0]*cp
+            ry += n[1]*cp
+            rz += n[2]*cp
         
         RZ = rz/self.reference_area
         RX = rx/self.reference_area
@@ -90,11 +89,7 @@ class ComputeLiftProcess(KratosMultiphysics.Process):
         title="Cl: %.5f, Cd: %.5f" % (Cl,Cd)
         plt.title(title)
         plt.gca().invert_yaxis()
-<<<<<<< HEAD
-        plt.savefig(''+self.problem_name+'.png', bbox_inches='tight')
-=======
         plt.savefig(self.problem_name+'.png', bbox_inches='tight')
->>>>>>> CompressiblePotentialFlow/feature-embedded-mesh-implementation
         plt.close('all')
         print('RZ = ', RZ)
 
