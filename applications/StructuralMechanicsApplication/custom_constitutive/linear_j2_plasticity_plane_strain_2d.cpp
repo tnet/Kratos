@@ -14,6 +14,7 @@
 
 #include "linear_j2_plasticity_plane_strain_2d.h"
 #include "structural_mechanics_application_variables.h"
+#include "custom_utilities/constitutive_law_utilities.h"
 
 namespace Kratos
 {
@@ -38,8 +39,7 @@ LinearJ2PlasticityPlaneStrain2D::LinearJ2PlasticityPlaneStrain2D(const LinearJ2P
 
 ConstitutiveLaw::Pointer LinearJ2PlasticityPlaneStrain2D::Clone() const
 {
-    LinearJ2PlasticityPlaneStrain2D::Pointer pclone(new LinearJ2PlasticityPlaneStrain2D(*this));
-    return pclone;
+    return Kratos::make_shared<LinearJ2PlasticityPlaneStrain2D>(LinearJ2PlasticityPlaneStrain2D(*this));
 }
 
 //********************************DESTRUCTOR******************************************
@@ -49,74 +49,87 @@ LinearJ2PlasticityPlaneStrain2D::~LinearJ2PlasticityPlaneStrain2D()
 {
 }
 
+////************************************************************************************
+////************************************************************************************
+//
+//void LinearJ2PlasticityPlaneStrain2D::CalculateMaterialResponsePK1(ConstitutiveLaw::Parameters& //rValues)
+//{
+//    CalculateMaterialResponseCauchy(rValues);
+//}
+//
+////************************************************************************************
+////************************************************************************************
+//
+//void LinearJ2PlasticityPlaneStrain2D::CalculateMaterialResponsePK2(ConstitutiveLaw::Parameters& //rValues)
+//{
+//    CalculateMaterialResponseCauchy(rValues);
+//}
+//
 //************************************************************************************
 //************************************************************************************
 
-void LinearJ2PlasticityPlaneStrain2D::CalculateMaterialResponsePK1(ConstitutiveLaw::Parameters& rValues)
+//void LinearJ2PlasticityPlaneStrain2D::CalculateMaterialResponseKirchhoff(ConstitutiveLaw::Parameters& //rValues)
+//{
+//    CalculateMaterialResponseCauchy(rValues);
+//}
+//
+//************************************************************************************
+//************************************************************************************
+
+//void LinearJ2Plasticity3D::CalculateMaterialResponseCauchy(ConstitutiveLaw::Parameters& rValues)
+//{
+//    Vector plastic_strain;
+//    double accumulated_plastic_strain;
+//    this->CalculateStressResponse(rValues, plastic_strain, accumulated_plastic_strain);
+//}
+
+//************************************************************************************
+//************************************************************************************
+
+void LinearJ2PlasticityPlaneStrain2D::CalculateStressResponse(
+        ConstitutiveLaw::Parameters& rValues,
+        Vector& rPlasticStrain,
+        double& rAccumulatedPlasticStrain)
 {
-    CalculateMaterialResponseCauchy(rValues);
-}
-
-//************************************************************************************
-//************************************************************************************
-
-void LinearJ2PlasticityPlaneStrain2D::CalculateMaterialResponsePK2(ConstitutiveLaw::Parameters& rValues)
-{
-    CalculateMaterialResponseCauchy(rValues);
-}
-
-//************************************************************************************
-//************************************************************************************
-
-void LinearJ2PlasticityPlaneStrain2D::CalculateMaterialResponseKirchhoff(ConstitutiveLaw::Parameters& rValues)
-{
-    CalculateMaterialResponseCauchy(rValues);
-}
-
-//************************************************************************************
-//************************************************************************************
-
-void LinearJ2PlasticityPlaneStrain2D::CalculateMaterialResponseCauchy(ConstitutiveLaw::Parameters& rValues)
-{
-    Flags &Options = rValues.GetOptions();
-
-    const Properties& rMaterialProperties = rValues.GetMaterialProperties();
-    Vector& strain_vector = rValues.GetStrainVector();
-    Vector& stress_vector = rValues.GetStressVector();
-
-    if (Options.Is(ConstitutiveLaw::COMPUTE_CONSTITUTIVE_TENSOR)) {
-        Matrix& ConstitutiveMatrix = rValues.GetConstitutiveMatrix();
-        CalculateElasticMatrix(ConstitutiveMatrix, rMaterialProperties);
+    KRATOS_WATCH("---- DEBUG ----")
+    const Properties& r_material_properties = rValues.GetMaterialProperties();
+    Flags &r_constitutive_law_options = rValues.GetOptions();
+    Vector& r_strain_vector = rValues.GetStrainVector();
+    if (rValues.GetProcessInfo().Has(INITIAL_STRAIN)) {
+        noalias(r_strain_vector) += rValues.GetProcessInfo()[INITIAL_STRAIN];
     }
 
-    if (Options.Is(ConstitutiveLaw::COMPUTE_STRESS)) {
-        if (rValues.GetProcessInfo().Has(INITIAL_STRAIN)) {
-            noalias(strain_vector) += rValues.GetProcessInfo()[INITIAL_STRAIN];
-        }
-        Matrix elastic_tensor;
+    if( r_constitutive_law_options.IsNot(ConstitutiveLaw::USE_ELEMENT_PROVIDED_STRAIN)) {
+        this->CalculateValue(rValues, STRAIN, r_strain_vector);
+    }
+
+    if( r_constitutive_law_options.Is(ConstitutiveLaw::COMPUTE_STRESS) ||
+        r_constitutive_law_options.Is(ConstitutiveLaw::COMPUTE_CONSTITUTIVE_TENSOR)) {
+        Vector& r_stress_vector = rValues.GetStressVector();
         Matrix& tangent_tensor = rValues.GetConstitutiveMatrix();
-        const double hardening_modulus = rMaterialProperties[ISOTROPIC_HARDENING_MODULUS];
-        const double delta_k = rMaterialProperties[INFINITY_HARDENING_MODULUS];
-        const double hardening_exponent = rMaterialProperties[HARDENING_EXPONENT];
-        const double E = rMaterialProperties[YOUNG_MODULUS];
-        const double poisson_ratio = rMaterialProperties[POISSON_RATIO];
+        Matrix& ConstitutiveMatrix = rValues.GetConstitutiveMatrix();
+        const double hardening_modulus = r_material_properties[ISOTROPIC_HARDENING_MODULUS];
+        const double delta_k = r_material_properties[INFINITY_HARDENING_MODULUS];
+        const double hardening_exponent = r_material_properties[HARDENING_EXPONENT];
+        const double E = r_material_properties[YOUNG_MODULUS];
+        const double poisson_ratio = r_material_properties[POISSON_RATIO];
         const double mu = E / (2. + 2. * poisson_ratio);
         const double volumetric_modulus = E / (3. * (1. - 2. * poisson_ratio));
-        const double sqrt_two_thirds = std::sqrt(2.0 / 3.0); // =0.8164965809277260
+        const double sqrt_two_thirds = std::sqrt(2. / 3.); // = 0.8164965809277260
         double trial_yield_function;
 
-        mPlasticStrain = mPlasticStrain;
-        mAccumulatedPlasticStrain = mAccumulatedPlasticStrain;
+        rPlasticStrain = mPlasticStrain;
+        rAccumulatedPlasticStrain = mAccumulatedPlasticStrain;
 
+        Matrix elastic_tensor;
         elastic_tensor.resize(4, 4, false);
-        CalculateElasticMatrix(elastic_tensor, rMaterialProperties);
-        Vector yield_tensionrial(4);
-        noalias(yield_tensionrial) = prod(elastic_tensor, strain_vector - mPlasticStrain);
+        CalculateElasticMatrix(elastic_tensor, r_material_properties);
+        Vector yield_tension(4);
+        noalias(yield_tension) = prod(elastic_tensor, r_strain_vector - mPlasticStrain);
 
         // stress_trial_dev = sigma - 1/3 tr(sigma) * I
-        Vector stress_trial_dev = yield_tensionrial;
-
-        const double trace = 1.0 / 3.0 * (yield_tensionrial(0) + yield_tensionrial(1) + yield_tensionrial(2));
+        Vector stress_trial_dev = yield_tension;
+        const double trace = 1. / 3. * (yield_tension(0) + yield_tension(1) + yield_tension(2));
         stress_trial_dev(0) -= trace;
         stress_trial_dev(1) -= trace;
         stress_trial_dev(2) -= trace;
@@ -124,13 +137,19 @@ void LinearJ2PlasticityPlaneStrain2D::CalculateMaterialResponseCauchy(Constituti
                                            stress_trial_dev(1) * stress_trial_dev(1) +
                                            stress_trial_dev(2) * stress_trial_dev(2) +
                                            2. * stress_trial_dev(3) * stress_trial_dev(3));
-        trial_yield_function = this->YieldFunction(norm_dev_stress, rMaterialProperties);
+        trial_yield_function = this->YieldFunction(norm_dev_stress, r_material_properties);
 
         if (trial_yield_function <= 0.) {
             // ELASTIC
             mInelasticFlag = false;
-            stress_vector = yield_tensionrial;
-            tangent_tensor = elastic_tensor;
+
+            if( r_constitutive_law_options.Is( ConstitutiveLaw::COMPUTE_STRESS ) ) {
+                r_stress_vector = yield_tension;
+            }
+
+            if( r_constitutive_law_options.Is( ConstitutiveLaw::COMPUTE_CONSTITUTIVE_TENSOR ) ) {
+                tangent_tensor = elastic_tensor;
+            }
         } else {
             // INELASTIC
             mInelasticFlag = true;
@@ -138,7 +157,7 @@ void LinearJ2PlasticityPlaneStrain2D::CalculateMaterialResponseCauchy(Constituti
             Vector yield_function_normal_vector = stress_trial_dev / norm_dev_stress;
             if (delta_k != 0.0 && hardening_exponent != 0.0) {
                 // Exponential softening
-                dgamma = GetDeltaGamma(norm_dev_stress, rMaterialProperties, mAccumulatedPlasticStrain);
+                dgamma = GetDeltaGamma(norm_dev_stress, r_material_properties, rAccumulatedPlasticStrain);
             }
             else {
                 // Linear softening
@@ -146,61 +165,66 @@ void LinearJ2PlasticityPlaneStrain2D::CalculateMaterialResponseCauchy(Constituti
                          (2. * mu * (1. + (hardening_modulus / (3. * mu))));
             }
 
-            stress_vector(0) =
-                volumetric_modulus * (strain_vector(0) + strain_vector(1) + strain_vector(2)) +
-                stress_trial_dev(0) - 2. * mu * dgamma * yield_function_normal_vector(0);
-            stress_vector(1) =
-                volumetric_modulus * (strain_vector(0) + strain_vector(1) + strain_vector(2)) +
-                stress_trial_dev(1) - 2. * mu * dgamma * yield_function_normal_vector(1);
-            stress_vector(2) =
-                volumetric_modulus * (strain_vector(0) + strain_vector(1) + strain_vector(2)) +
-                stress_trial_dev(2) - 2. * mu * dgamma * yield_function_normal_vector(2);
-            stress_vector(3) =
-                stress_trial_dev(3) - 2. * mu * dgamma * yield_function_normal_vector(3);
+            if( r_constitutive_law_options.Is( ConstitutiveLaw::COMPUTE_STRESS ) ) {
+                r_stress_vector(0) =
+                        volumetric_modulus * (r_strain_vector(0) + r_strain_vector(1) + r_strain_vector(2)) +
+                        stress_trial_dev(0) - 2. * mu * dgamma * yield_function_normal_vector(0);
+                r_stress_vector(1) =
+                        volumetric_modulus * (r_strain_vector(0) + r_strain_vector(1) + r_strain_vector(2)) +
+                        stress_trial_dev(1) - 2. * mu * dgamma * yield_function_normal_vector(1);
+                r_stress_vector(2) =
+                        volumetric_modulus * (r_strain_vector(0) + r_strain_vector(1) + r_strain_vector(2)) +
+                        stress_trial_dev(2) - 2. * mu * dgamma * yield_function_normal_vector(2);
+                r_stress_vector(3) =
+                        stress_trial_dev(3) - 2. * mu * dgamma * yield_function_normal_vector(3);
+            }
 
-            mPlasticStrain(0) = mPlasticStrain(0) + dgamma * yield_function_normal_vector(0);
-            mPlasticStrain(1) = mPlasticStrain(1) + dgamma * yield_function_normal_vector(1);
-            mPlasticStrain(2) = mPlasticStrain(2) + dgamma * yield_function_normal_vector(2);
-            mPlasticStrain(3) = mPlasticStrain(3) + dgamma * yield_function_normal_vector(3) * 2;
-            mAccumulatedPlasticStrain = mAccumulatedPlasticStrain + sqrt_two_thirds * dgamma;
+            rPlasticStrain(0) = mPlasticStrain(0) + dgamma * yield_function_normal_vector(0);
+            rPlasticStrain(1) = mPlasticStrain(1) + dgamma * yield_function_normal_vector(1);
+            rPlasticStrain(2) = mPlasticStrain(2) + dgamma * yield_function_normal_vector(2);
+            rPlasticStrain(3) = mPlasticStrain(3) + dgamma * yield_function_normal_vector(3) * 2;
+            rAccumulatedPlasticStrain = mAccumulatedPlasticStrain + sqrt_two_thirds * dgamma;
 
             // Update derivative of the hardening-softening modulus
 
-            CalculateTangentTensor(dgamma, norm_dev_stress, yield_function_normal_vector,
-                                   rMaterialProperties, tangent_tensor, mAccumulatedPlasticStrain);
+            // We update the tangent tensor
+            if( r_constitutive_law_options.Is( ConstitutiveLaw::COMPUTE_CONSTITUTIVE_TENSOR ) ) {
+                CalculateTangentTensor(dgamma, norm_dev_stress, yield_function_normal_vector,
+                                       r_material_properties, tangent_tensor, rAccumulatedPlasticStrain);
+            }
         }
     }
 }
 
+////************************************************************************************
+////************************************************************************************
+//
+//void LinearJ2PlasticityPlaneStrain2D::FinalizeMaterialResponsePK1(ConstitutiveLaw::Parameters& rValues)
+//{
+//}
+//
+////************************************************************************************
+////************************************************************************************
+//
+//
+//void LinearJ2PlasticityPlaneStrain2D::FinalizeMaterialResponsePK2(ConstitutiveLaw::Parameters& rValues)
+//{
+//}
+//
+////************************************************************************************
+////************************************************************************************
+//
+//
+//void LinearJ2PlasticityPlaneStrain2D::FinalizeMaterialResponseKirchhoff(ConstitutiveLaw::Parameters& //rValues)
+//{
+//}
+
 //************************************************************************************
 //************************************************************************************
 
-void LinearJ2PlasticityPlaneStrain2D::FinalizeMaterialResponsePK1(ConstitutiveLaw::Parameters& rValues)
-{
-}
-
-//************************************************************************************
-//************************************************************************************
-
-
-void LinearJ2PlasticityPlaneStrain2D::FinalizeMaterialResponsePK2(ConstitutiveLaw::Parameters& rValues)
-{
-}
-
-//************************************************************************************
-//************************************************************************************
-
-
-void LinearJ2PlasticityPlaneStrain2D::FinalizeMaterialResponseKirchhoff(ConstitutiveLaw::Parameters& rValues)
-{
-}
-
-//************************************************************************************
-//************************************************************************************
-
-void LinearJ2PlasticityPlaneStrain2D::FinalizeMaterialResponseCauchy(ConstitutiveLaw::Parameters& rValues)
-{
-}
+//void LinearJ2PlasticityPlaneStrain2D::FinalizeMaterialResponseCauchy(ConstitutiveLaw::Parameters& rValues)
+//{
+//}
 
 //************************************************************************************
 //************************************************************************************
@@ -294,6 +318,66 @@ void LinearJ2PlasticityPlaneStrain2D::CalculateTangentTensor(
     rElasticityTensor(3, 1) = -(2. * mu * theta_new_b * (YieldFunctionNormalVector(3) * YieldFunctionNormalVector(1)));
     rElasticityTensor(3, 2) = -(2. * mu * theta_new_b * (YieldFunctionNormalVector(3) * YieldFunctionNormalVector(2)));
     rElasticityTensor(3, 3) = mu * theta_new - (2. * mu * theta_new_b * (YieldFunctionNormalVector(3) * YieldFunctionNormalVector(3)));
+}
+
+//************************************************************************************
+//************************************************************************************
+
+double& LinearJ2PlasticityPlaneStrain2D::CalculateValue(
+    ConstitutiveLaw::Parameters& rValues,
+    const Variable<double>& rThisVariable,
+    double& rValue
+    )
+{
+    if(rThisVariable == STRAIN_ENERGY){
+        Vector& r_strain_vector = rValues.GetStrainVector();
+        if (rValues.GetProcessInfo().Has(INITIAL_STRAIN)) {
+            noalias(r_strain_vector) += rValues.GetProcessInfo()[INITIAL_STRAIN];
+        }
+        const Properties& r_material_properties = rValues.GetMaterialProperties();
+        Matrix elastic_tensor(4, 4);
+        CalculateElasticMatrix(elastic_tensor, r_material_properties);
+
+        rValue = 0.5 * inner_prod(r_strain_vector - mPlasticStrain,
+                                  prod(elastic_tensor, r_strain_vector - mPlasticStrain))
+                 + GetPlasticPotential(r_material_properties, mAccumulatedPlasticStrain);
+    }
+
+    return(rValue);
+}
+
+//************************************************************************************
+//************************************************************************************
+
+Vector& LinearJ2PlasticityPlaneStrain2D::CalculateValue(
+    ConstitutiveLaw::Parameters& rParameterValues,
+    const Variable<Vector>& rThisVariable,
+    Vector& rValue
+    )
+{
+    if (rThisVariable == GREEN_LAGRANGE_STRAIN_VECTOR )
+    {
+        Vector& r_strain_vector = rParameterValues.GetStrainVector();
+        if (rParameterValues.GetProcessInfo().Has(INITIAL_STRAIN)) {
+            noalias(r_strain_vector) += rParameterValues.GetProcessInfo()[INITIAL_STRAIN];
+        }
+        rValue = r_strain_vector;
+    }
+
+    //if (rThisVariable == STRAIN) {
+    //    const SizeType space_dimension = this->WorkingSpaceDimension();
+
+    //    // Compute total deformation gradient
+    //    const Matrix& r_F = rParameterValues.GetDeformationGradientF();
+    //    KRATOS_DEBUG_ERROR_IF(r_F.size1()!= space_dimension || r_F.size2() != space_dimension)
+    //        << "expected size of F " << space_dimension << "x" << space_dimension
+    //        << ", got " << r_F.size1() << "x" << r_F.size2() << std::endl;
+
+    //    const Matrix C_tensor = prod(trans(r_F),r_F);
+    //    ConstitutiveLawUtilities<4>::CalculateGreenLagrangianStrain(C_tensor, rValue);
+    //}
+
+    return(rValue);
 }
 
 //************************************************************************************

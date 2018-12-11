@@ -133,56 +133,78 @@ public:
      * @param rValues The specific parameters of the current constitutive law
      * @see Parameters
      */
-    void CalculateMaterialResponsePK1(ConstitutiveLaw::Parameters& rValues) override;
+    //void CalculateMaterialResponsePK1(ConstitutiveLaw::Parameters& rValues) override;
+
+    /**
+     * @brief It calculates the value of a specified variable (double)
+     * @param rParameterValues the needed parameters for the CL calculation
+     * @param rThisVariable the variable to be returned
+     * @param rValue a reference to the returned value
+     * @return rValue output: the value of the specified variable
+     */
+    double& CalculateValue(ConstitutiveLaw::Parameters& rParameterValues,
+                           const Variable<double>& rThisVariable,
+                           double& rValue) override;
+
+    /**
+     * @brief It calculates the value of a specified variable vector
+     * @param rParameterValues the needed parameters for the CL calculation
+     * @param rThisVariable the variable to be returned
+     * @param rValue a reference to the returned value
+     * @return rValue output: the value of the specified variable
+     */
+    Vector& CalculateValue(ConstitutiveLaw::Parameters& rParameterValues,
+                           const Variable<Vector>& rThisVariable,
+                           Vector& rValue) override;
 
     /**
      * @brief Computes the material response in terms of 2nd Piola-Kirchhoff stresses and constitutive tensor
      * @param rValues The specific parameters of the current constitutive law
      * @see Parameters
      */
-    void CalculateMaterialResponsePK2(ConstitutiveLaw::Parameters& rValues) override;
+    //void CalculateMaterialResponsePK2(ConstitutiveLaw::Parameters& rValues) override;
 
     /**
      * @brief Computes the material response in terms of Kirchhoff stresses and constitutive tensor
      * @param rValues The specific parameters of the current constitutive law
      * @see Parameters
      */
-    void CalculateMaterialResponseKirchhoff(ConstitutiveLaw::Parameters& rValues) override;
+    //void CalculateMaterialResponseKirchhoff(ConstitutiveLaw::Parameters& rValues) override;
 
     /**
      * @brief Computes the material response in terms of Cauchy stresses and constitutive tensor
      * @param rValues The specific parameters of the current constitutive law
      * @see Parameters
      */
-    void CalculateMaterialResponseCauchy(ConstitutiveLaw::Parameters& rValues) override;
+    //void CalculateMaterialResponseCauchy(ConstitutiveLaw::Parameters& rValues);
 
     /**
      * @brief Finalize the material response in terms of 1st Piola-Kirchhoff stresses
      * @param rValues The specific parameters of the current constitutive law
      * @see Parameters
      */
-    void FinalizeMaterialResponsePK1(ConstitutiveLaw::Parameters& rValues) override;
+    //void FinalizeMaterialResponsePK1(ConstitutiveLaw::Parameters& rValues) override;
 
     /**
      * @brief Finalize the material response in terms of 2nd Piola-Kirchhoff stresses
      * @param rValues The specific parameters of the current constitutive law
      * @see Parameters
      */
-    void FinalizeMaterialResponsePK2(ConstitutiveLaw::Parameters& rValues) override;
+    //void FinalizeMaterialResponsePK2(ConstitutiveLaw::Parameters& rValues) override;
 
     /**
      * @brief Finalize the material response in terms of Kirchhoff stresses
      * @param rValues The specific parameters of the current constitutive law
      * @see Parameters
      */
-    void FinalizeMaterialResponseKirchhoff(ConstitutiveLaw::Parameters& rValues) override;
+    //void FinalizeMaterialResponseKirchhoff(ConstitutiveLaw::Parameters& rValues) override;
 
     /**
      * @brief Finalize the material response in terms of Cauchy stresses
      * @param rValues The specific parameters of the current constitutive law
      * @see Parameters
      */
-    void FinalizeMaterialResponseCauchy(ConstitutiveLaw::Parameters& rValues) override;
+    //void FinalizeMaterialResponseCauchy(ConstitutiveLaw::Parameters& rValues) override;
 
     ///@}
     ///@name Inquiry
@@ -212,6 +234,16 @@ protected:
     ///@}
     ///@name Protected Operations
     ///@{
+
+    /**
+     * @brief This method computes the stress and constitutive tensor
+     * @param rValues The norm of the deviation stress
+     * @param rPlasticStrain
+     * @param rAccumulatedPlasticStrain
+     */
+    void CalculateStressResponse(ConstitutiveLaw::Parameters& rValues,
+                                 Vector& rPlasticStrain,
+                                 double& rAccumulatedPlasticStrain );
 
     /**
      * @brief This method computes the plastic potential
@@ -260,8 +292,8 @@ private:
     ///@}
     ///@name Member Variables
     ///@{
-    Vector mPlasticStrain; /// The previous plastic strain (one for each of the strain components)
-    double mAccumulatedPlasticStrain; /// The previous accumulated plastic strain
+    //Vector mPlasticStrain; /// The previous plastic strain (one for each of the strain components)
+    //double mAccumulatedPlasticStrain; /// The previous accumulated plastic strain
 
     ///@}
     ///@name Private Operators
