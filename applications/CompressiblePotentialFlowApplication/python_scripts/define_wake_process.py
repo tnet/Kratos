@@ -18,7 +18,7 @@ def RotateModelPart(origin, angle, model_part):
 class DefineWakeProcess(KratosMultiphysics.Process):
     def __init__(self, Model, settings ):
         KratosMultiphysics.Process.__init__(self)
-        print("Initialize Wake Process")
+        # print("Initialize Wake Process")
         default_settings = KratosMultiphysics.Parameters("""
             {
                 "mesh_id"                   : 0,
@@ -51,11 +51,11 @@ class DefineWakeProcess(KratosMultiphysics.Process):
 
         self.model=Model
         self.wake_model_part_name=settings["model_part_name"].GetString()
-        self.wake_line_model_part=Model.CreateModelPart("wake")
+        #self.wake_line_model_part=Model.CreateModelPart("wake")
         angle=math.radians(-self.geometry_parameter)
-        for node in self.wake_line_model_part.Nodes:
-            node.X = ox+math.cos(angle)*(node.X - ox)-math.sin(angle)*(node.Y - oy)
-            node.Y = oy+math.sin(angle)*(node.X - ox)+math.cos(angle)*(node.Y - oy)
+        #for node in self.wake_line_model_part.Nodes:
+         #   node.X = ox+math.cos(angle)*(node.X - ox)-math.sin(angle)*(node.Y - oy)
+          #  node.Y = oy+math.sin(angle)*(node.X - ox)+math.cos(angle)*(node.Y - oy)
           # We set to zero the metric
         ZeroVector = KratosMultiphysics.Vector(3)
         ZeroVector[0] = 0.0
@@ -112,7 +112,7 @@ class DefineWakeProcess(KratosMultiphysics.Process):
         
         
     def FindWake(self):
-        print("Executing wake process")     
+        # print("Executing wake process")     
         
         if self.wake_model_part_name == "LevelSetWake":
             self.DefineWakeFromLevelSet()
@@ -159,7 +159,7 @@ class DefineWakeProcess(KratosMultiphysics.Process):
                     elem.Set(KratosMultiphysics.INTERFACE) 
                     for elnode in elem.GetNodes():
                         elnode.Set(KratosMultiphysics.THERMAL,True)
-                    print('KUTTA ELEMENT:',elem.Id)
+                    # print('KUTTA ELEMENT:',elem.Id)
                     elem.Set(KratosMultiphysics.ACTIVE,True)
                     
             from gid_output_process import GiDOutputProcess
@@ -201,7 +201,7 @@ class DefineWakeProcess(KratosMultiphysics.Process):
 
             #mark as STRUCTURE and deactivate the elements that touch the kutta node
             for node in self.kutta_model_part.Nodes:
-                print("Wake Node:",node.Id,": (", node.X,",",node.Y,")")            
+                # print("Wake Node:",node.Id,": (", node.X,",",node.Y,")")            
                 node.Set(KratosMultiphysics.STRUCTURE) 
             #     master_node=node
             # count=1
@@ -231,7 +231,7 @@ class DefineWakeProcess(KratosMultiphysics.Process):
                 self.n[0] = -self.direction[1]
                 self.n[1] = self.direction[0]
                 self.n[2] = 0.0
-                print("normal =",self.n)
+                # print("normal =",self.n)
                 
                 for node in self.kutta_model_part.Nodes:
                     x0 = node.X

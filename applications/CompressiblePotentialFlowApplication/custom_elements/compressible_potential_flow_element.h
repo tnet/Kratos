@@ -496,7 +496,7 @@ public:
                     {
                         if(data.distances[i]<0)
                         {
-                            std::cout << "LOWER WAKE NODE = " << GetGeometry()[i].Id()  << std::endl;
+                            // std::cout << "LOWER WAKE NODE = " << GetGeometry()[i].Id()  << std::endl;
                             for(unsigned int j=0; j<NumNodes; ++j)
                             {
                                 rLeftHandSideMatrix(i,j)          = lhs_positive(i,j); 
@@ -513,7 +513,7 @@ public:
                     {                            
                         if(data.distances[i]>0)
                         {   
-                            std::cout << "UPPER WAKE NODE = " << GetGeometry()[i].Id()  << std::endl;
+                            // std::cout << "UPPER WAKE NODE = " << GetGeometry()[i].Id()  << std::endl;
                             for(unsigned int j=0; j<NumNodes; ++j)
                             {
                                 rLeftHandSideMatrix(i+NumNodes,j+NumNodes) = lhs_negative(i,j);
@@ -887,7 +887,7 @@ public:
                 }
 
                 array_1d<double,Dim> vaux = prod(trans(data.DN_DX), data.phis);
-                double vupnorm = inner_prod(vaux,vaux);
+                // double vupnorm = inner_prod(vaux,vaux);
 
                 //taking only negative part
                 for (unsigned int i = 0; i < NumNodes; i++)
@@ -899,12 +899,12 @@ public:
                 }
 
                 array_1d<double,Dim> vtest = prod(trans(data.DN_DX), data.phis);
-                double vdownnorm = inner_prod(vtest,vtest);
+                // double vdownnorm = inner_prod(vtest,vtest);
 
-                if( abs(vupnorm - vdownnorm) > 0.1)
-                {
-                   std::cout << "WAKE CONDITION NOT FULFILLED ELEMENT = " << this->Id()  << std::endl; 
-                }
+                // if( abs(vupnorm - vdownnorm) > 0.1)
+                // {
+                //    std::cout << "WAKE CONDITION NOT FULFILLED ELEMENT = " << this->Id()  << std::endl; 
+                // }
                 
                 for(unsigned int k=0; k<Dim; k++) v[k] = vaux[k];
             }
@@ -1239,16 +1239,16 @@ protected:
 
     void CheckWakeCondition()
     {
-        array_1d<double, Dim> upper_wake_velocity;
-        ComputeVelocityUpperWakeElement(upper_wake_velocity);
-        const double vupnorm = inner_prod(upper_wake_velocity, upper_wake_velocity);
+        // array_1d<double, Dim> upper_wake_velocity;
+        // ComputeVelocityUpperWakeElement(upper_wake_velocity);
+        // const double vupnorm = inner_prod(upper_wake_velocity, upper_wake_velocity);
 
-        array_1d<double, Dim> lower_wake_velocity;
-        ComputeVelocityLowerWakeElement(lower_wake_velocity);
-        const double vlownorm = inner_prod(lower_wake_velocity, lower_wake_velocity);
+        // array_1d<double, Dim> lower_wake_velocity;
+        // ComputeVelocityLowerWakeElement(lower_wake_velocity);
+        // const double vlownorm = inner_prod(lower_wake_velocity, lower_wake_velocity);
 
-        if (std::abs(vupnorm - vlownorm) > 0.1)
-            std::cout << "WAKE CONDITION NOT FULFILLED IN ELEMENT # " << this->Id() << std::endl;
+        // if (std::abs(vupnorm - vlownorm) > 0.1)
+        //     std::cout << "WAKE CONDITION NOT FULFILLED IN ELEMENT # " << this->Id() << std::endl;
     }
 
     double ComputePressure(const ProcessInfo& rCurrentProcessInfo)

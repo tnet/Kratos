@@ -41,7 +41,7 @@ class PotentialSolver(PythonSolver):
                     "coarse_enough" : 5000,
                     "krylov_type": "lgmres",
                     "tolerance": 1e-9,
-                    "verbosity": 3,
+                    "verbosity": 0,
                     "scaling": false
             }
 
@@ -63,8 +63,10 @@ class PotentialSolver(PythonSolver):
 
         if self.model.HasModelPart(model_part_name):
             self.main_model_part = self.model.GetModelPart(model_part_name)
+            self.solver_imports_model_part = False
         else:
             self.main_model_part = model.CreateModelPart(model_part_name)
+            self.solver_imports_model_part = True
         
         self.domain_size = custom_settings["domain_size"].GetInt()
         self.main_model_part.ProcessInfo.SetValue(KratosMultiphysics.DOMAIN_SIZE, self.domain_size)
@@ -144,73 +146,79 @@ class PotentialSolver(PythonSolver):
 
     def ImportModelPart(self):
 
-        if(self.settings["model_import_settings"]["input_type"].GetString() == "mdpa"):
-            #here it would be the place to import restart data if required
-            print(self.settings["model_import_settings"]["input_filename"].GetString())
-            IOdir=self.settings["model_import_settings"]["input_filename"].GetString()
-            KratosMultiphysics.ModelPartIO(IOdir).ReadModelPart(self.main_model_part)
+        """This function imports the ModelPart
+        """
+        if self.solver_imports_model_part:
+            # print(self.model.GetModelPart(self.settings["model_part_name"].GetString()))
+            self._ImportModelPart(self.main_model_part,self.settings["model_import_settings"])
+            if(self.settings["model_import_settings"]["input_type"].GetString() == "mdpa"):
+                #here it would be the place to import restart data if required
+                print(self.settings["model_import_settings"]["input_filename"].GetString())
+                # IOdir=self.settings["model_import_settings"]["input_filename"].GetString()
             
-            throw_errors = False
-            KratosMultiphysics.TetrahedralMeshOrientationCheck(self.main_model_part,throw_errors).Execute()
-            #here we replace the dummy elements we read with proper elements
-            self.settings.AddEmptyValue("element_replace_settings")
-            if (self.settings["problem_type"].GetString() == "incompressible"):
-                if(self.domain_size == 3):
-                    self.settings["element_replace_settings"] = KratosMultiphysics.Parameters("""
-                        {
-                        "element_name":"IncompressiblePotentialFlowElement3D4N",
-                        "condition_name": "IncompressiblePotentialWallCondition3D3N"
-                        }
-                        """)
-                elif(self.domain_size == 2):
-                    self.settings["element_replace_settings"] = KratosMultiphysics.Parameters("""
-                        {
-                        "element_name":"IncompressiblePotentialFlowElement2D3N",
-                        "condition_name": "IncompressiblePotentialWallCondition2D2N"
-                        }
-                        """)
+                # KratosMultiphysics.ModelPartIO(IOdir).ReadModelPart(self.main_model_part)
+                throw_errors = False
+                # KratosMultiphysics.TetrahedralMeshOrientationCheck(self.main_model_part,throw_errors).Execute()
+                #here we replace the dummy elements we read with proper elements
+                element_replace_settings=KratosMultiphysics.Parameters()
+                element_replace_settings.AddEmptyValue("element_replace_settings")
+                if (self.settings["problem_type"].GetString() == "incompressible"):
+                    if(self.domain_size == 3):
+                        element_replace_settings["element_replace_settings"] = KratosMultiphysics.Parameters("""
+                            {
+                            "element_name":"IncompressiblePotentialFlowElement3D4N",
+                            "condition_name": "IncompressiblePotentialWallCondition3D3N"
+                            }
+                            """)
+                    elif(self.domain_size == 2):
+                        element_replace_settings["element_replace_settings"] = KratosMultiphysics.Parameters("""
+                            {
+                            "element_name":"IncompressiblePotentialFlowElement2D3N",
+                            "condition_name": "IncompressiblePotentialWallCondition2D2N"
+                            }
+                            """)
+                    else:
+                        raise Exception("Domain size is not 2 or 3!!")
+                elif (self.settings["problem_type"].GetString() == "compressible"):
+                    if(self.domain_size == 3):
+                        element_replace_settings["element_replace_settings"] = KratosMultiphysics.Parameters("""
+                            {
+                            "element_name":"CompressiblePotentialFlowElement3D4N",
+                            "condition_name": "CompressiblePotentialWallCondition3D3N"
+                            }
+                            """)
+                    elif(self.domain_size == 2):
+                        element_replace_settings["element_replace_settings"] = KratosMultiphysics.Parameters("""
+                            {
+                            "element_name":"CompressiblePotentialFlowElement2D3N",
+                            "condition_name": "CompressiblePotentialWallCondition2D2N"
+                            }
+                            """)
+                    else:
+                        raise Exception("Domain size is not 2 or 3!!")
+                elif (self.settings["problem_type"].GetString() == "incompressible_stresses"):
+                    if(self.domain_size == 2):
+                        element_replace_settings["element_replace_settings"] = KratosMultiphysics.Parameters("""
+                            {
+                            "element_name":"IncompressibleStressesPotentialFlowElement2D3N",
+                            "condition_name": "IncompressiblePotentialWallCondition2D2N"
+                            }
+                            """)
+                    else:
+                        raise Exception("Domain size is not 2!!")
                 else:
-                    raise Exception("Domain size is not 2 or 3!!")
-            elif (self.settings["problem_type"].GetString() == "compressible"):
-                if(self.domain_size == 3):
-                    self.settings["element_replace_settings"] = KratosMultiphysics.Parameters("""
-                        {
-                        "element_name":"CompressiblePotentialFlowElement3D4N",
-                        "condition_name": "CompressiblePotentialWallCondition3D3N"
-                        }
-                        """)
-                elif(self.domain_size == 2):
-                    self.settings["element_replace_settings"] = KratosMultiphysics.Parameters("""
-                        {
-                        "element_name":"CompressiblePotentialFlowElement2D3N",
-                        "condition_name": "CompressiblePotentialWallCondition2D2N"
-                        }
-                        """)
-                else:
-                    raise Exception("Domain size is not 2 or 3!!")
-            elif (self.settings["problem_type"].GetString() == "incompressible_stresses"):
-                if(self.domain_size == 2):
-                    self.settings["element_replace_settings"] = KratosMultiphysics.Parameters("""
-                        {
-                        "element_name":"IncompressibleStressesPotentialFlowElement2D3N",
-                        "condition_name": "IncompressibleStressesPotentialWallCondition2D2N"
-                        }
-                        """)
-                else:
-                    raise Exception("Domain size is not 2!!")
+                    raise Exception("Problem type not defined!!")
+                
+                KratosMultiphysics.ReplaceElementsAndConditionsProcess(self.main_model_part, element_replace_settings["element_replace_settings"]).Execute()
+                
             else:
-                raise Exception("Problem type not defined!!")
-            
-            KratosMultiphysics.ReplaceElementsAndConditionsProcess(self.main_model_part, self.settings["element_replace_settings"]).Execute()
+                raise Exception("other input options are not yet implemented")
+            print("Solving",self.settings["problem_type"].GetString() ,"case")
+            current_buffer_size = self.main_model_part.GetBufferSize()
+            if(self.GetMinimumBufferSize() > current_buffer_size):
+                self.main_model_part.SetBufferSize( self.GetMinimumBufferSize() )
 
-        else:
-            raise Exception("other input options are not yet implemented")
-        print("Solving",self.settings["problem_type"].GetString() ,"case")
-        current_buffer_size = self.main_model_part.GetBufferSize()
-        if(self.GetMinimumBufferSize() > current_buffer_size):
-            self.main_model_part.SetBufferSize( self.GetMinimumBufferSize() )
-
-        print ("model reading finished")
+            print ("model reading finished")
 
     def GetMinimumBufferSize(self):
         return 2;
