@@ -149,16 +149,16 @@ class PotentialSolver(PythonSolver):
         """This function imports the ModelPart
         """
         if self.solver_imports_model_part:
-            # print(self.model.GetModelPart(self.settings["model_part_name"].GetString()))
-            self._ImportModelPart(self.main_model_part,self.settings["model_import_settings"])
             if(self.settings["model_import_settings"]["input_type"].GetString() == "mdpa"):
-                #here it would be the place to import restart data if required
-                print(self.settings["model_import_settings"]["input_filename"].GetString())
-                # IOdir=self.settings["model_import_settings"]["input_filename"].GetString()
-            
+                #here it would be the place to import restart data if required    
+                            
+                self._ImportModelPart(self.main_model_part,self.settings["model_import_settings"])
+
+                # IOdir=self.settings["model_import_settings"]["input_filename"].GetString()    
                 # KratosMultiphysics.ModelPartIO(IOdir).ReadModelPart(self.main_model_part)
+
                 throw_errors = False
-                # KratosMultiphysics.TetrahedralMeshOrientationCheck(self.main_model_part,throw_errors).Execute()
+                KratosMultiphysics.TetrahedralMeshOrientationCheck(self.main_model_part,throw_errors).Execute()
                 #here we replace the dummy elements we read with proper elements
                 element_replace_settings=KratosMultiphysics.Parameters()
                 element_replace_settings.AddEmptyValue("element_replace_settings")
