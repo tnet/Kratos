@@ -208,7 +208,7 @@ void LinearIsotropicDamage3D::CalculateStressResponse(
     }
 
     if( r_constitutive_law_options.IsNot(ConstitutiveLaw::USE_ELEMENT_PROVIDED_STRAIN)) {
-        this->CalculateValue(rValues, GREEN_LAGRANGE_STRAIN_VECTOR, r_strain_vector);
+        this->CalculateValue(rValues, STRAIN, r_strain_vector);
     }
 
     // If we compute the tangent moduli or the stress

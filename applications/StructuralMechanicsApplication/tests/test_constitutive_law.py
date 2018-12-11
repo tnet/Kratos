@@ -276,12 +276,12 @@ class TestConstitutiveLaw(KratosUnittest.TestCase):
 
         self._generic_constitutive_law_test(model_part, deformation_test)
 
-    def test_J2_Plasticity_Plane_Strain_2D(self):
-        current_model = KratosMultiphysics.Model()
-        model_part = current_model.CreateModelPart("test")
-        deformation_test = DeformationLinearJ2PlasticityPlaneStrain2D()
-
-        self._generic_constitutive_law_test(model_part, deformation_test)
+    # def test_J2_Plasticity_Plane_Strain_2D(self):
+    #     current_model = KratosMultiphysics.Model()
+    #     model_part = current_model.CreateModelPart("test")
+    #     deformation_test = DeformationLinearJ2PlasticityPlaneStrain2D()
+    #
+    #     self._generic_constitutive_law_test(model_part, deformation_test)
 
     def test_Isotropic_Damage_3D(self):
         current_model = KratosMultiphysics.Model()
