@@ -1102,11 +1102,27 @@ protected:
 
         velocity = prod(trans(data.DN_DX), data.phis);
 
-        const double v_norm2 = inner_prod(velocity,velocity);
-        const double base = 1 + (gamma -1)*vinfinity_norm2*(1-v_norm2/vinfinity_norm2)/(2*a*a);
+        double v_norm2 = inner_prod(velocity,velocity);
 
-        density = densityinfinity*pow(base,1/(gamma -1));
-        derivative = -densityinfinity*pow(base,(2 - gamma)/(gamma -1))/(2*a*a);
+        if(v_norm2/(a*a) > 0.94)
+        {
+            std::cout << "Mach is "<<v_norm2/(a*a)<<". Using mach correction" << std::endl;
+            v_norm2 = 0.94/(a*a);
+        }
+  
+        const double base = 1 + (gamma -1)*vinfinity_norm2*(1-v_norm2/vinfinity_norm2)/(2*a*a);
+        if(base > 0)
+        {
+            density = densityinfinity*pow(base,1/(gamma -1));
+            derivative = -densityinfinity*pow(base,(2 - gamma)/(gamma -1))/(2*a*a); 
+        }
+        else
+        {
+            std::cout << "Base smaller than 0. Using density correction" << std::endl;
+
+            density = densityinfinity*0.00001;
+            derivative = -densityinfinity*pow(densityinfinity*0.00001,(2 - gamma)/(gamma -1))/(2*a*a); 
+        }     
     }
 
     void ComputeDensity(double& density, 
@@ -1146,12 +1162,12 @@ protected:
         velocity = prod(trans(data.DN_DX), data.phis);
 
         double v_norm2 = inner_prod(velocity,velocity);
-        if(v_norm2/a > 0.94)
+        if(v_norm2/(a*a) > 0.94)
         {
-            //std::cout << "Local mach larger than 0.94. Using density correction" << std::endl;
-            v_norm2 = 0.94*a;
+            std::cout << "Mach is "<<v_norm2/(a*a)<<". Using mach correction" << std::endl;
+            v_norm2 = 0.94/(a*a);
         }
-
+  
         const double base = 1 + (gamma -1)*vinfinity_norm2*(1-v_norm2/vinfinity_norm2)/(2*a*a);
         if(base > 0)
         {
@@ -1160,10 +1176,12 @@ protected:
         }
         else
         {
+            // std::cout<<"phis"<<data.phis<<std::endl;
+
             std::cout << "Base smaller than 0. Using density correction" << std::endl;
-            std::cout << "vinfinity_norm2 =" << vinfinity_norm2 << std::endl;
-            std::cout << "v_norm2 =" << v_norm2 << std::endl;
-            std::cout << "base =" << base << std::endl;
+            // std::cout << "vinfinity_norm2 =" << vinfinity_norm2 << std::endl;
+            // std::cout << "v_norm2 =" << v_norm2 << std::endl;
+            // std::cout << "base =" << base << std::endl;
             density = densityinfinity*0.00001;
             derivative = -densityinfinity*pow(densityinfinity*0.00001,(2 - gamma)/(gamma -1))/(2*a*a); 
         }     
